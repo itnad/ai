@@ -1,0 +1,17 @@
+{
+  "name": "서비스명",
+  "type": "static",
+  "description": "서비스 설명",
+  "stack": {
+    "frontend": "react",
+    "backend": "none"
+  },
+  "deploy": {
+    "platform": "vercel",
+    "region": "icn1"
+  },
+  "build": {
+    "command": "npm run build",
+    "output_dir": "dist"
+  }
+}
