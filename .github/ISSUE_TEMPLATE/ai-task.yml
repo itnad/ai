@@ -1,0 +1,53 @@
+name: 🤖 AI 작업 요청
+description: AI에게 특정 서비스의 코드 작업을 요청합니다
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AI가 선택한 서비스의 코드를 자동으로 수정합니다.
+        **서비스를 정확히 선택**하고 작업 내용을 구체적으로 작성해주세요.
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: 대상 서비스
+      description: 작업할 서비스를 선택하세요 (레포지토리 내 폴더명과 일치해야 합니다)
+      options:
+        - socceroid
+        - wordchain
+        - haruil
+        # 서비스 추가 시 여기에 추가
+    validations:
+      required: true
+
+  - type: textarea
+    id: task
+    attributes:
+      label: 작업 내용
+      description: AI에게 요청할 작업을 최대한 구체적으로 작성해주세요
+      placeholder: |
+        예시:
+        - 메인 페이지에 다크모드 토글 버튼을 추가해줘
+        - 로그인 폼의 유효성 검사 로직에서 이메일 형식 체크가 안 되는 버그를 수정해줘
+        - API 응답 속도가 느린데 캐싱 레이어를 추가해줘
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 추가 컨텍스트 (선택)
+      description: 관련 파일 경로, 에러 메시지, 참고 사항 등
+      placeholder: |
+        - 관련 파일: src/components/Login.jsx
+        - 에러: TypeError: Cannot read property 'email' of undefined
+        - 참고: 기존 버튼 스타일과 통일해줘
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 확인
+      options:
+        - label: 서비스명이 레포지토리 폴더명과 일치함을 확인했습니다
+          required: true
