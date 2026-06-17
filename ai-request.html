@@ -2,398 +2,2143 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 작업 요청 — itnad/ai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>itnad/ai · Task</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
   <style>
+    /* ── shadcn/ui dark theme tokens + Geist ── */
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #21262d;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-muted: #7d8590;
-      --accent: #58a6ff;
-      --accent-dim: #1f3a6e;
-      --success: #3fb950;
-      --error: #f85149;
-      --warning: #d29922;
+      /* background / surface */
+      --bg:       oklch(0.145 0 0);        /* shadcn background */
+      --surface:  oklch(0.205 0 0);        /* shadcn card */
+      --surface2: oklch(0.17 0 0);         /* popover / dropdown */
 
-      /* 서비스별 색상 */
-      --socceroid: #0075ca;
-      --wordchain: #00b4d8;
-      --haruil: #e63946;
+      /* border */
+      --border:   oklch(0.26 0 0);         /* shadcn border */
+      --border2:  oklch(0.32 0 0);         /* hover border */
+
+      /* primary — shadcn default (zinc-50 on dark) */
+      --accent:   oklch(0.985 0 0);        /* primary foreground의 역할: 밝은 흰색 */
+      --accent2:  oklch(0.87 0 0);         /* secondary text */
+
+      /* semantic colours */
+      --green:    oklch(0.72 0.165 162);   /* emerald-400 */
+      --blue:     oklch(0.70 0.15 250);    /* blue-400 */
+      --red:      oklch(0.65 0.22 27);     /* red-400  = shadcn destructive */
+      --amber:    oklch(0.83 0.155 85);    /* amber-400 */
+
+      /* text */
+      --text:     oklch(0.985 0 0);        /* shadcn foreground */
+      --muted:    oklch(0.556 0 0);        /* shadcn muted-foreground */
+
+      /* radius — shadcn 기본 0.625rem */
+      --radius: 0.625rem;
+
+      /* typography — Geist (Vercel, Swiss-inspired) */
+      --sans: 'Geist', 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+      --mono: 'Geist Mono', 'JetBrains Mono', 'Courier New', monospace;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ══════════════════════════════════════════════
+       SKIN 1 (default) — Zinc Dark
+       ══════════════════════════════════════════════ */
+
+    /* ══════════════════════════════════════════════
+       SKIN 2 — Pastel Cute 🌸
+       흰 배경 + 파스텔 핑크/라벤더. 귀엽고 밝은 느낌.
+       폰트: DM Sans
+       ══════════════════════════════════════════════ */
+    [data-skin="cute"] {
+      --bg:       #fdf4f9;
+      --surface:  #ffffff;
+      --surface2: #fce8f5;
+      --border:   #f0c6e4;
+      --border2:  #e8a8d8;
+      --accent:   #d946a8;
+      --accent2:  #a855f7;
+      --green:    #34d399;
+      --blue:     #818cf8;
+      --red:      #f43f5e;
+      --amber:    #f59e0b;
+      --text:     #3b1a3a;
+      --muted:    #a87898;
+      --radius:   1.25rem;
+      --sans:  'DM Sans', 'Noto Sans KR', sans-serif;
+      --mono:  'Geist Mono', 'Courier New', monospace;
+    }
+
+    [data-skin="cute"] body::before { background: none; }
+    [data-skin="cute"] .card {
+      border-radius: 1.5rem;
+      box-shadow: 0 2px 12px rgba(217,70,168,.10);
+      border-color: #f0c6e4;
+    }
+    [data-skin="cute"] .card:focus-within { border-color: #d946a8; }
+    [data-skin="cute"] .logo-icon {
+      background: linear-gradient(135deg, #f9a8d4, #c4b5fd);
+      border: none;
+      box-shadow: 0 2px 8px rgba(217,70,168,.25);
+    }
+    [data-skin="cute"] .logo-text { color: #d946a8; }
+    [data-skin="cute"] .submit-btn {
+      background: linear-gradient(135deg, #f472b6, #a78bfa);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(217,70,168,.3);
+    }
+    [data-skin="cute"] .mode-btn.active {
+      background: #fce8f5;
+      border-color: #d946a8;
+      color: #d946a8;
+    }
+    [data-skin="cute"] .field-label .dot { background: #f472b6; }
+    [data-skin="cute"] input:focus,
+    [data-skin="cute"] textarea:focus { border-color: #f472b6; background: #fdf4f9; }
+    [data-skin="cute"] .svc-item:active,
+    [data-skin="cute"] .svc-item.selected { background: #fce8f5; }
+    [data-skin="cute"] .type-btn.selected {
+      border-color: #d946a8; background: #fce8f5; color: #d946a8;
+    }
+    [data-skin="cute"] .setup-btn { background: linear-gradient(135deg, #f472b6, #a78bfa); color: #fff; }
+    [data-skin="cute"] .add-svc-btn { border-color: #f0c6e4; color: #d946a8; }
+    [data-skin="cute"] .restore-prev-btn { border-color: #f0c6e4; color: #a87898; }
+    [data-skin="cute"] .issue-link { border-color: #f0c6e4; color: #d946a8; }
+    [data-skin="cute"] .issue-link:hover { background: #fce8f5; }
+    [data-skin="cute"] .info-badge { background: #fce8f5; border-color: #f0c6e4; }
+    [data-skin="cute"] .toggle-switch input:checked + .toggle-track { background: rgba(217,70,168,.4); }
+    [data-skin="cute"] .toggle-track::after { background: #d0a0c0; }
+    [data-skin="cute"] .toggle-switch input:checked + .toggle-track::after { background: #d946a8; }
+    [data-skin="cute"] .skin-select { background: #fce8f5; border-color: #f0c6e4; color: #a87898; }
+
+    /* ══════════════════════════════════════════════
+       SKIN 3 — Government 📋
+       대한민국 정부24 / 행정기관 느낌
+       흰 배경 + 남색 + 굴림 계열
+       ══════════════════════════════════════════════ */
+    [data-skin="gov"] {
+      --bg:       #f0f2f5;
+      --surface:  #ffffff;
+      --surface2: #e8eaed;
+      --border:   #c8cbd0;
+      --border2:  #9ea3ad;
+      --accent:   #003876;
+      --accent2:  #0052a3;
+      --green:    #1a7a3c;
+      --blue:     #0052a3;
+      --red:      #c0392b;
+      --amber:    #b7770d;
+      --text:     #1a1a1a;
+      --muted:    #5a5f6b;
+      --radius:   0.2rem;
+      --sans:  'Noto Sans KR', '맑은 고딕', 'Malgun Gothic', sans-serif;
+      --mono:  'Courier New', monospace;
+    }
+
+    [data-skin="gov"] body::before { background: none; }
+    [data-skin="gov"] body { background: #f0f2f5; }
+
+    [data-skin="gov"] header {
+      background: #003876;
+      padding: 16px 20px;
+      margin-bottom: 0;
+    }
+    [data-skin="gov"] .logo-icon {
+      background: #fff;
+      border: 2px solid #c8a84b;
+      border-radius: 4px;
+      box-shadow: none;
+      animation: none;
+      font-size: 14px;
+    }
+    [data-skin="gov"] .logo-text { color: #ffffff; font-size: 16px; font-family: var(--sans); font-weight: 700; }
+    [data-skin="gov"] .subtitle { color: #a8c0e0; font-family: var(--sans); letter-spacing: 0; }
+
+    [data-skin="gov"] .card {
+      border-radius: 0.2rem;
+      border: 1px solid #c8cbd0;
+      box-shadow: none;
+    }
+    [data-skin="gov"] .card:focus-within { border-color: #003876; }
+
+    [data-skin="gov"] .field-label {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+      color: #1a1a1a;
+      text-transform: none;
+      border-bottom: 2px solid #003876;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    [data-skin="gov"] .field-label .dot { display: none; }
+
+    [data-skin="gov"] input[type="text"],
+    [data-skin="gov"] input[type="password"],
+    [data-skin="gov"] input[type="url"],
+    [data-skin="gov"] textarea {
+      border-radius: 0;
+      border: 1px solid #9ea3ad;
+      background: #fff;
+      font-family: var(--sans);
+    }
+    [data-skin="gov"] input:focus,
+    [data-skin="gov"] textarea:focus { border-color: #003876; background: #fff; outline: 2px solid rgba(0,56,118,.2); }
+
+    [data-skin="gov"] .submit-btn {
+      background: #003876;
+      color: #fff;
+      border-radius: 0.2rem;
+      box-shadow: none;
+      font-family: var(--sans);
+      font-size: 15px;
+      letter-spacing: 0.05em;
+    }
+    [data-skin="gov"] .submit-btn:hover { background: #002a5c; }
+
+    [data-skin="gov"] .mode-btn {
+      border-radius: 0;
+      font-family: var(--sans);
+      font-size: 13px;
+    }
+    [data-skin="gov"] .mode-btn.active { background: #003876; border-color: #003876; color: #fff; }
+
+    [data-skin="gov"] .svc-item:active,
+    [data-skin="gov"] .svc-item.selected { background: #dce8f5; }
+    [data-skin="gov"] .type-btn { border-radius: 0; font-family: var(--sans); font-size: 12px; }
+    [data-skin="gov"] .type-btn.selected { background: #003876; border-color: #003876; color: #fff; }
+    [data-skin="gov"] .setup-btn { background: #003876; color: #fff; border-radius: 0.2rem; font-family: var(--sans); }
+    [data-skin="gov"] .add-svc-btn { border-radius: 0; border-color: #003876; color: #003876; font-family: var(--sans); }
+    [data-skin="gov"] .restore-prev-btn { border-color: #9ea3ad; color: #5a5f6b; }
+    [data-skin="gov"] .issue-link { border-color: #003876; color: #003876; border-radius: 0.2rem; }
+    [data-skin="gov"] .info-badge { background: #dce8f5; border-color: #a8c0dc; border-radius: 0.2rem; color: #003876; }
+    [data-skin="gov"] .toggle-switch input:checked + .toggle-track { background: rgba(0,56,118,.5); }
+    [data-skin="gov"] .toggle-switch input:checked + .toggle-track::after { background: #003876; }
+    [data-skin="gov"] .skin-select { border-radius: 0; border-color: #9ea3ad; color: #1a1a1a; background-color: #fff; }
+    [data-skin="gov"] details.settings > summary { font-family: var(--sans); text-transform: none; font-size: 13px; font-weight: 700; color: #003876; }
+    [data-skin="gov"] .svc-dropdown { border-radius: 0; }
+    [data-skin="gov"] .svc-item-type { border-radius: 0; }
+    [data-skin="gov"] .check-circle { border-radius: 0.2rem; border-color: #003876; background: #dce8f5; }
+    [data-skin="gov"] .success-title { color: #003876; }
+    [data-skin="gov"] .reset-btn { color: #003876; }
+
+    /* ══════════════════════════════════════════════
+       SKIN 4 — RPG Quest 🎮
+       판타지 RPG 게임 UI. 황금 테두리 + 양피지 배경
+       Space Mono + 대형 radius 0
+       ══════════════════════════════════════════════ */
+    [data-skin="rpg"] {
+      --bg:       #1a1208;
+      --surface:  #2a1f0e;
+      --surface2: #1f1608;
+      --border:   #8b6914;
+      --border2:  #c4a832;
+      --accent:   #f5c842;
+      --accent2:  #fde88a;
+      --green:    #4ade80;
+      --blue:     #60a5fa;
+      --red:      #ef4444;
+      --amber:    #f59e0b;
+      --text:     #f5e6c8;
+      --muted:    #9a7c4a;
+      --radius:   0;
+      --sans:  'Space Mono', 'Noto Sans KR', monospace;
+      --mono:  'Space Mono', 'Courier New', monospace;
+    }
+
+    [data-skin="rpg"] body::before {
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(245,200,66,.08) 0%, transparent 60%);
+    }
+
+    [data-skin="rpg"] .card {
+      border-radius: 0;
+      border: 2px solid #8b6914;
+      box-shadow: inset 0 0 0 1px #3a2a08, 4px 4px 0 #0a0800;
+      background: #2a1f0e;
+    }
+    [data-skin="rpg"] .card:focus-within { border-color: #f5c842; }
+
+    [data-skin="rpg"] .logo-icon {
+      background: #2a1f0e;
+      border: 2px solid #c4a832;
+      border-radius: 0;
+      box-shadow: 2px 2px 0 #0a0800;
+      animation: none;
+    }
+    [data-skin="rpg"] .logo-text {
+      color: #f5c842;
+      text-shadow: 0 0 12px rgba(245,200,66,.5);
+      letter-spacing: 2px;
+    }
+    [data-skin="rpg"] .subtitle { color: #9a7c4a; letter-spacing: 1px; }
+
+    [data-skin="rpg"] .field-label {
+      color: #c4a832;
+      letter-spacing: 2px;
+    }
+    [data-skin="rpg"] .field-label .dot { background: #f5c842; border-radius: 0; width: 6px; height: 6px; }
+
+    [data-skin="rpg"] input[type="text"],
+    [data-skin="rpg"] input[type="password"],
+    [data-skin="rpg"] input[type="url"],
+    [data-skin="rpg"] textarea {
+      border-radius: 0;
+      border: 1px solid #8b6914;
+      background: #1a1208;
+      color: #f5e6c8;
+      font-family: var(--mono);
+    }
+    [data-skin="rpg"] input:focus,
+    [data-skin="rpg"] textarea:focus { border-color: #f5c842; background: #1a1208; box-shadow: 0 0 8px rgba(245,200,66,.2); }
+
+    [data-skin="rpg"] .submit-btn {
+      background: #8b6914;
+      color: #f5e6c8;
+      border-radius: 0;
+      box-shadow: 4px 4px 0 #0a0800;
+      font-family: var(--mono);
+      letter-spacing: 2px;
+      font-size: 13px;
+      border: 1px solid #c4a832;
+    }
+    [data-skin="rpg"] .submit-btn:hover { background: #a07a1a; }
+    [data-skin="rpg"] .submit-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #0a0800; }
+
+    [data-skin="rpg"] .mode-btn {
+      border-radius: 0;
+      border: 1px solid #8b6914;
+      color: #9a7c4a;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    [data-skin="rpg"] .mode-btn.active {
+      background: #3a2a08;
+      border-color: #f5c842;
+      color: #f5c842;
+      box-shadow: 2px 2px 0 #0a0800;
+    }
+
+    [data-skin="rpg"] .type-btn { border-radius: 0; border-color: #8b6914; color: #9a7c4a; }
+    [data-skin="rpg"] .type-btn.selected { background: #3a2a08; border-color: #f5c842; color: #f5c842; }
+    [data-skin="rpg"] .setup-btn { background: #8b6914; color: #f5e6c8; border-radius: 0; border: 1px solid #c4a832; box-shadow: 2px 2px 0 #0a0800; font-family: var(--mono); }
+    [data-skin="rpg"] .add-svc-btn { border-radius: 0; border-color: #8b6914; color: #c4a832; box-shadow: 2px 2px 0 #0a0800; }
+    [data-skin="rpg"] .svc-dropdown { border-radius: 0; border-color: #8b6914; }
+    [data-skin="rpg"] .svc-item:active, [data-skin="rpg"] .svc-item.selected { background: #3a2a08; }
+    [data-skin="rpg"] .restore-prev-btn { border-color: #8b6914; color: #9a7c4a; border-radius: 0; }
+    [data-skin="rpg"] .issue-link { border-color: #8b6914; color: #f5c842; border-radius: 0; box-shadow: 2px 2px 0 #0a0800; }
+    [data-skin="rpg"] .info-badge { background: #1a1208; border-color: #8b6914; border-radius: 0; color: #9a7c4a; }
+    [data-skin="rpg"] .info-badge strong { color: #f5c842; }
+    [data-skin="rpg"] .toggle-switch input:checked + .toggle-track { background: rgba(139,105,20,.6); }
+    [data-skin="rpg"] .toggle-switch input:checked + .toggle-track::after { background: #f5c842; }
+    [data-skin="rpg"] .skin-select { border-radius: 0; border-color: #8b6914; background-color: #1a1208; color: #9a7c4a; }
+    [data-skin="rpg"] .check-circle { border-radius: 0; border: 2px solid #f5c842; background: #3a2a08; }
+    [data-skin="rpg"] .success-title { color: #f5c842; }
+    [data-skin="rpg"] .svc-item-type { border-radius: 0; }
+    [data-skin="rpg"] details.settings > summary { color: #c4a832; }
+
+    /* ══════════════════════════════════════════════
+       SKIN 5 — Y2K Web 🌐
+       2000년대 초반 홈페이지 감성
+       흰 배경 + 파랑/보라 계열, 쿨그레이, 큰 테두리
+       굴림 + Times 혼용 느낌
+       ══════════════════════════════════════════════ */
+    [data-skin="y2k"] {
+      --bg:       #e8e8f0;
+      --surface:  #ffffff;
+      --surface2: #f0f0f8;
+      --border:   #9090c0;
+      --border2:  #6060a0;
+      --accent:   #0000cc;
+      --accent2:  #6600cc;
+      --green:    #009900;
+      --blue:     #0066ff;
+      --red:      #cc0000;
+      --amber:    #cc6600;
+      --text:     #000033;
+      --muted:    #606080;
+      --radius:   0.125rem;
+      --sans:  '돋움', 'Dotum', 'Noto Sans KR', sans-serif;
+      --mono:  'Courier New', monospace;
+    }
+
+    [data-skin="y2k"] body {
+      background: #e8e8f0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23e8e8f0'/%3E%3Crect width='1' height='1' fill='%23d8d8e8' opacity='.5'/%3E%3C/svg%3E");
+    }
+    [data-skin="y2k"] body::before { background: none; }
+
+    [data-skin="y2k"] header {
+      background: linear-gradient(180deg, #6060c0 0%, #3030a0 50%, #0000cc 100%);
+      padding: 12px 20px 10px;
+    }
+    [data-skin="y2k"] .logo-icon {
+      background: linear-gradient(135deg, #c0c0ff, #6060c0);
+      border: 2px outset #c0c0ff;
+      border-radius: 2px;
+      animation: none;
+      box-shadow: none;
+      font-size: 14px;
+    }
+    [data-skin="y2k"] .logo-text {
+      color: #ffffff;
+      text-shadow: 1px 1px 0 #000066, 2px 2px 0 #000044;
+      font-family: '돋움', 'Dotum', sans-serif;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+    [data-skin="y2k"] .subtitle { color: #c0c0ff; font-family: var(--sans); letter-spacing: 0; font-size: 11px; }
+
+    [data-skin="y2k"] .card {
+      border-radius: 0;
+      border: 2px inset #c0c0c8;
+      box-shadow: 2px 2px 4px rgba(0,0,0,.3);
+      background: #ffffff;
+    }
+    [data-skin="y2k"] .card:focus-within { border-color: #0000cc; }
+
+    [data-skin="y2k"] .field-label {
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      color: #000033;
+      letter-spacing: 0;
+      text-transform: none;
+      background: linear-gradient(180deg, #9090c0, #6060a0);
+      color: #ffffff;
+      margin: -18px -18px 12px -18px;
+      padding: 5px 12px;
+      border-radius: 0;
+    }
+    [data-skin="y2k"] .field-label .dot { display: none; }
+
+    [data-skin="y2k"] input[type="text"],
+    [data-skin="y2k"] input[type="password"],
+    [data-skin="y2k"] input[type="url"],
+    [data-skin="y2k"] textarea {
+      border-radius: 0;
+      border: 2px inset #c0c0c8;
+      background: #ffffff;
+      font-family: var(--sans);
+      font-size: 13px;
+    }
+    [data-skin="y2k"] input:focus,
+    [data-skin="y2k"] textarea:focus { border-color: #0000cc; background: #f8f8ff; outline: none; box-shadow: none; }
+
+    [data-skin="y2k"] .submit-btn {
+      background: linear-gradient(180deg, #6060c0, #0000cc);
+      color: #ffffff;
+      border-radius: 0;
+      border: 2px outset #9090d0;
+      box-shadow: none;
+      font-family: var(--sans);
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    [data-skin="y2k"] .submit-btn:active { border-style: inset; transform: none; }
+
+    [data-skin="y2k"] .mode-btn {
+      border-radius: 0;
+      border: 2px outset #c0c0c8;
+      font-family: var(--sans);
+      font-size: 12px;
+      background: #e8e8f0;
+      color: #000033;
+    }
+    [data-skin="y2k"] .mode-btn.active {
+      background: #6060c0;
+      border: 2px inset #c0c0c8;
+      color: #ffffff;
+      box-shadow: none;
+    }
+
+    [data-skin="y2k"] .type-btn { border-radius: 0; border: 2px outset #c0c0c8; font-family: var(--sans); font-size: 11px; background: #e8e8f0; color: #000033; }
+    [data-skin="y2k"] .type-btn.selected { background: #6060c0; border: 2px inset #c0c0c8; color: #fff; }
+    [data-skin="y2k"] .setup-btn { background: linear-gradient(180deg, #6060c0, #0000cc); color: #fff; border-radius: 0; border: 2px outset #9090d0; font-family: var(--sans); }
+    [data-skin="y2k"] .add-svc-btn { border-radius: 0; border: 2px outset #c0c0c8; color: #000033; background: #e8e8f0; font-family: var(--sans); }
+    [data-skin="y2k"] .svc-dropdown { border-radius: 0; border: 2px inset #c0c0c8; }
+    [data-skin="y2k"] .svc-item:active, [data-skin="y2k"] .svc-item.selected { background: #ddddf8; }
+    [data-skin="y2k"] .svc-item-type { border-radius: 0; background: #e8e8f0; }
+    [data-skin="y2k"] .restore-prev-btn { border: 1px solid #9090c0; color: #6060a0; border-radius: 0; background: #e8e8f0; }
+    [data-skin="y2k"] .issue-link { border: 2px outset #9090c0; color: #0000cc; border-radius: 0; }
+    [data-skin="y2k"] .info-badge { background: #f0f0ff; border: 1px solid #9090c0; border-radius: 0; color: #000033; }
+    [data-skin="y2k"] .info-badge strong { color: #0000cc; }
+    [data-skin="y2k"] .toggle-switch input:checked + .toggle-track { background: #6060c0; }
+    [data-skin="y2k"] .toggle-switch input:checked + .toggle-track::after { background: #0000cc; }
+    [data-skin="y2k"] .skin-select { border-radius: 0; border: 2px inset #c0c0c8; background-color: #e8e8f0; color: #000033; }
+    [data-skin="y2k"] .check-circle { border-radius: 0; border: 2px solid #0000cc; background: #f0f0ff; }
+    [data-skin="y2k"] .success-title { color: #0000cc; font-family: var(--sans); }
+    [data-skin="y2k"] details.settings > summary { font-family: var(--sans); text-transform: none; font-size: 12px; font-weight: 700; }
+
+    /* ══════════════════════════════════════════════
+       SKIN 6 — Matcha Latte ☕
+       그린-베이지 밝은 배경. 따뜻하고 차분한 카페 감성.
+       DM Sans
+       ══════════════════════════════════════════════ */
+    [data-skin="matcha"] {
+      --bg:       #f4f1ea;
+      --surface:  #faf8f3;
+      --surface2: #edeae0;
+      --border:   #d4cfc0;
+      --border2:  #b8b29e;
+      --accent:   #4a7c59;
+      --accent2:  #6a9e72;
+      --green:    #4a7c59;
+      --blue:     #5b7fa6;
+      --red:      #b85c5c;
+      --amber:    #b07d3a;
+      --text:     #2d2a22;
+      --muted:    #8a8270;
+      --radius:   0.75rem;
+      --sans:  'DM Sans', 'Noto Sans KR', sans-serif;
+      --mono:  'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    [data-skin="matcha"] body::before { background: none; }
+    [data-skin="matcha"] .card {
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      border-color: #d4cfc0;
+    }
+    [data-skin="matcha"] .card:focus-within { border-color: #4a7c59; }
+    [data-skin="matcha"] .logo-icon {
+      background: #4a7c59;
+      border: none;
+      box-shadow: none;
+      animation: none;
+    }
+    [data-skin="matcha"] .logo-text { color: #2d2a22; }
+    [data-skin="matcha"] .submit-btn {
+      background: #4a7c59;
+      color: #faf8f3;
+      box-shadow: 0 2px 8px rgba(74,124,89,.25);
+    }
+    [data-skin="matcha"] .mode-btn.active { background: #e8f0ea; border-color: #4a7c59; color: #4a7c59; }
+    [data-skin="matcha"] .field-label .dot { background: #4a7c59; }
+    [data-skin="matcha"] input:focus, [data-skin="matcha"] textarea:focus { border-color: #4a7c59; background: #faf8f3; }
+    [data-skin="matcha"] .svc-item:active, [data-skin="matcha"] .svc-item.selected { background: #e8f0ea; }
+    [data-skin="matcha"] .type-btn.selected { border-color: #4a7c59; background: #e8f0ea; color: #4a7c59; }
+    [data-skin="matcha"] .setup-btn { background: #4a7c59; color: #faf8f3; }
+    [data-skin="matcha"] .add-svc-btn { border-color: #d4cfc0; color: #4a7c59; }
+    [data-skin="matcha"] .restore-prev-btn { border-color: #d4cfc0; color: #8a8270; }
+    [data-skin="matcha"] .issue-link { border-color: #d4cfc0; color: #4a7c59; }
+    [data-skin="matcha"] .issue-link:hover { background: #e8f0ea; }
+    [data-skin="matcha"] .info-badge { background: #e8f0ea; border-color: #d4cfc0; }
+    [data-skin="matcha"] .info-badge strong { color: #4a7c59; }
+    [data-skin="matcha"] .toggle-switch input:checked + .toggle-track { background: rgba(74,124,89,.4); }
+    [data-skin="matcha"] .toggle-switch input:checked + .toggle-track::after { background: #4a7c59; }
+    [data-skin="matcha"] .skin-select { background: #edeae0; border-color: #d4cfc0; color: #8a8270; }
+    [data-skin="matcha"] .check-circle { border-color: #4a7c59; background: #e8f0ea; }
+    [data-skin="matcha"] .success-title { color: #4a7c59; }
+
+    /* ── 스킨 선택 콤보박스 ── */
+    .skin-picker {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 200;
+    }
+
+    .skin-select {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 10px;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 24px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e7681' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: border-color .2s, color .2s;
+    }
+
+    .skin-select:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .skin-select:focus { border-color: var(--accent); }
+
+    /* skin 전환 시 부드러운 색 변화 */
+    body, .card, input, textarea, .svc-dropdown,
+    .submit-btn, .add-svc-btn, .mode-btn, .type-btn,
+    .setup-btn, .new-svc-panel, .skin-select {
+      transition: background-color .25s, border-color .25s, color .25s;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, 'Segoe UI', sans-serif;
+      font-family: var(--sans);
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 24px 16px 48px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 55% 45% at 75% 8%, rgba(255,255,255,.04) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 35% at 15% 85%, rgba(255,255,255,.025) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     header {
-      width: 100%;
-      max-width: 640px;
-      margin-bottom: 32px;
-    }
-
-    .logo {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      letter-spacing: 0.05em;
-    }
-
-    h1 {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    h1 span {
-      color: var(--accent);
-    }
-
-    .card {
-      width: 100%;
-      max-width: 640px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* 서비스 선택 */
-    .service-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-    }
-
-    .service-btn {
-      background: var(--surface2);
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 10px;
-      cursor: pointer;
-      transition: all 0.15s;
+      position: relative;
+      z-index: 1;
+      padding: 28px 20px 0;
       text-align: center;
     }
 
-    .service-btn:hover {
-      border-color: var(--accent);
-      background: var(--accent-dim);
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
     }
 
-    .service-btn.selected {
-      border-color: var(--accent);
-      background: var(--accent-dim);
+    .logo-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: oklch(0.26 0 0);
+      border: 1px solid oklch(0.32 0 0);
+      display: grid; place-items: center;
+      font-size: 17px;
+      box-shadow: 0 0 0 1px oklch(0.32 0 0);
+      animation: pulse 3s ease-in-out infinite;
     }
 
-    .service-btn .svc-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 1px oklch(0.32 0 0); }
+      50%      { box-shadow: 0 0 0 2px oklch(0.40 0 0); }
     }
 
-    .service-btn .svc-type {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    .service-btn .svc-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin: 0 auto 6px;
-    }
-
-    /* 폼 요소 */
-    label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    textarea, input[type="password"] {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      padding: 12px;
-      resize: vertical;
-      outline: none;
-      font-family: inherit;
-      transition: border-color 0.15s;
-    }
-
-    textarea:focus, input[type="password"]:focus {
-      border-color: var(--accent);
-    }
-
-    textarea { min-height: 120px; }
-
-    .field { display: flex; flex-direction: column; }
-
-    /* 버튼 */
-    .submit-btn {
-      background: var(--accent);
-      color: #0d1117;
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 15px;
+    .logo-text {
+      font-family: var(--mono);
+      font-size: 18px;
       font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      width: 100%;
+      color: var(--text);
+      letter-spacing: -0.5px;
     }
 
-    .submit-btn:hover { opacity: 0.85; }
-    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* 상태 메시지 */
-    .status {
-      padding: 12px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: none;
-    }
-
-    .status.success { background: #1a3a22; border: 1px solid var(--success); color: var(--success); display: block; }
-    .status.error   { background: #3a1a1a; border: 1px solid var(--error);   color: var(--error);   display: block; }
-    .status.loading { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); display: block; }
-
-    /* 설정 토글 */
-    .settings-toggle {
+    .subtitle {
       font-size: 12px;
-      color: var(--text-muted);
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      padding: 20px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      transition: border-color .2s;
+    }
+
+    .card:focus-within { border-color: oklch(0.45 0 0); }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .field-label .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: oklch(0.60 0 0);
+      flex-shrink: 0;
+    }
+    .field-label .dot.green { background: var(--green); }
+    .field-label .dot.blue  { background: var(--blue); }
+
+    /* ── 서비스 선택 드롭다운 ── */
+    .svc-input-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .svc-dropdown {
+      display: none;
+      flex-direction: column;
+      margin-top: 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .svc-dropdown.show { display: flex; }
+
+    .svc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
       cursor: pointer;
+      transition: background .12s;
+      -webkit-tap-highlight-color: transparent;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .svc-item:last-child { border-bottom: none; }
+    .svc-item:active, .svc-item.selected { background: oklch(0.22 0 0); }
+
+    .svc-item-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .svc-item-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .svc-item.selected .svc-item-name { color: var(--text); }
+
+    .svc-item-type {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--border);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .svc-item-check {
+      font-size: 12px;
+      color: var(--accent);
+      width: 14px;
+      flex-shrink: 0;
+    }
+
+    .svc-item-del {
       background: none;
       border: none;
-      padding: 0;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color .15s;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .settings-panel {
+    .svc-item-del:active { color: var(--red); }
+
+    /* 새 서비스 추가 항목 */
+    .svc-item.add-new {
+      border-top: 1px solid var(--border2);
+      color: var(--accent);
+    }
+
+    .svc-item.add-new .svc-item-name { color: var(--muted); }
+
+    .svc-empty-msg {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .add-svc-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 12px;
+      height: 42px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .add-svc-btn:hover { background: oklch(0.26 0 0); }
+
+    /* ── 새 서비스 세팅 패널 ── */
+    .new-svc-panel {
       display: none;
       flex-direction: column;
       gap: 12px;
+      margin-top: 12px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
     }
 
-    .settings-panel.open { display: flex; }
+    .new-svc-panel.show { display: flex; }
 
-    /* 이슈 링크 */
-    .issue-link {
+    .new-svc-panel label.sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .06em;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .type-btn {
+      padding: 9px 8px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .type-btn.selected {
+      border-color: var(--text);
+      background: oklch(0.26 0 0);
+      color: var(--text);
+    }
+
+    .setup-btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      background: var(--text);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .setup-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* 세팅 진행 상태 */
+    .setup-progress {
       display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .setup-progress.show { display: flex; }
+
+    .progress-step {
+      display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 12px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--accent);
-      text-decoration: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
     }
 
-    .issue-link.visible { display: flex; }
+    .progress-step.done  { color: var(--green); }
+    .progress-step.active { color: var(--text); }
+    .progress-step.error  { color: var(--red); }
+
+    .step-icon { width: 16px; text-align: center; flex-shrink: 0; }
+
+    /* ── 입력 필드 공통 ── */
+    input[type="text"],
+    input[type="password"],
+    input[type="url"] {
+      width: 100%;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s, background .2s;
+      -webkit-appearance: none;
+    }
+
+    input:focus {
+      border-color: oklch(0.50 0 0);
+      background: oklch(0.18 0 0);
+    }
+
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      min-height: 130px;
+      transition: border-color .2s, background .2s;
+      -webkit-appearance: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      background: oklch(0.18 0 0);
+    }
+
+    .token-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .eye-btn {
+      background: var(--border);
+      border: none;
+      border-radius: 8px;
+      width: 42px; height: 42px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      display: grid; place-items: center;
+      transition: background .2s, color .2s;
+    }
+
+    .eye-btn:hover { background: var(--border2); color: var(--text); }
+
+    /* ── 모드 토글 ── */
+    .mode-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mode-btn {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mode-btn.active {
+      border-color: oklch(0.45 0 0);
+      background: oklch(0.22 0 0);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .revert-hint {
+      display: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.2);
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 10px;
+    }
+
+    .revert-hint.show { display: block; }
+    #body-card.revert-hidden { display: none; }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color .2s, background .2s;
+    }
+
+    .title-wrap:focus-within {
+      border-color: var(--accent);
+      background: oklch(0.18 0 0);
+    }
+
+    .title-prefix {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--red);
+      font-weight: 600;
+      padding: 12px 0 12px 14px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    #title {
+      border: none;
+      background: transparent;
+      border-radius: 0;
+      padding-left: 4px;
+      flex: 1;
+      min-width: 0;
+      font-size: 15px;
+      font-family: var(--sans);
+      font-weight: 400;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    #title:focus { border-color: transparent; background: transparent; }
+
+    .char-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .draft-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+      gap: 8px;
+    }
+
+    .restore-prev-btn {
+      background: oklch(0.20 0 0);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .restore-prev-btn:hover { background: oklch(0.22 0 0); }
+
+    /* ── 라벨 토글 ── */
+    .label-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px; height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--muted);
+      top: 3px; left: 3px;
+      transition: transform .2s, background .2s;
+    }
+
+    .toggle-switch input:checked + .toggle-track { background: oklch(0.36 0 0); }
+    .toggle-switch input:checked + .toggle-track::after {
+      transform: translateX(20px);
+      background: var(--text);
+    }
+
+    .toggle-desc { font-size: 12px; color: var(--muted); max-width: 75%; line-height: 1.4; }
+
+    /* ── details 설정 카드 ── */
+    details.settings { padding: 0; }
+
+    details.settings > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 16px 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    details.settings > summary::-webkit-details-marker { display: none; }
+    details.settings > summary .chev { margin-left: auto; transition: transform .2s; }
+    details.settings[open] > summary .chev { transform: rotate(90deg); }
+    details.settings > summary .summary-toggle { margin-left: auto; flex-shrink: 0; }
+    details.settings > summary .summary-title { display: flex; align-items: center; gap: 7px; min-width: 0; }
+
+    .settings-body { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .settings-body label.sub {
+      font-family: var(--mono); font-size: 10px; color: var(--muted);
+      letter-spacing: .06em; display: block; margin-bottom: 6px;
+    }
+    .settings-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .saved-flag { font-family: var(--mono); font-size: 10px; color: var(--green); opacity: 0; transition: opacity .2s; }
+    .saved-flag.show { opacity: 1; }
+
+    /* ── 제출 버튼 ── */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      background: var(--text);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+      transition: transform .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .submit-btn:active { transform: scale(.98); }
+    .submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .submit-btn .btn-text { position: relative; z-index: 1; }
+
+    /* ── 스피너 ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(8,8,42,.3);
+      border-top-color: #08082a;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto;
+    }
+
+    .loading .spinner { display: block; }
+    .loading .btn-text { display: none; }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-family: var(--mono);
+      font-size: 13px;
+      z-index: 100;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+      opacity: 0;
+      max-width: calc(100vw - 32px);
+      white-space: pre-line;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(52,211,153,.4); color: var(--green); }
+    .toast.error   { border-color: rgba(248,113,113,.4); color: var(--red); }
+
+    /* ── 완료 화면 ── */
+    .success-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 16px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .success-screen.show { display: flex; }
+    main.done { display: none; }
+
+    .check-circle {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: oklch(0.22 0 0);
+      border: 1px solid var(--border2);
+      display: grid; place-items: center;
+      font-size: 32px;
+      animation: pop .4s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+    .success-title { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text); }
+    .success-desc  { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    .issue-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background .2s;
+    }
+
+    .issue-link:hover { background: oklch(0.22 0 0); }
+
+    .reset-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 8px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .reset-hint {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 280px;
+      text-align: center;
+    }
+
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: oklch(0.17 0 0);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .info-badge strong { color: var(--text); }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">itnad / ai</div>
-  <h1>AI <span>작업 요청</span></h1>
-</header>
+  <!-- 스킨 선택 -->
+  <div class="skin-picker">
+    <select class="skin-select" id="skin-select" onchange="applySkin(this.value)" title="테마 선택">
+      <option value="default">🌑 Zinc Dark</option>
+      <option value="cute">🌸 Pastel Cute</option>
+      <option value="gov">📋 Government</option>
+      <option value="rpg">⚔️ RPG Quest</option>
+      <option value="y2k">🌐 Y2K Web</option>
+      <option value="matcha">🍵 Matcha</option>
+    </select>
+  </div>
 
-<div class="card">
-
-  <!-- 서비스 선택 -->
-  <div class="field">
-    <label>대상 서비스</label>
-    <div class="service-grid" id="serviceGrid">
-      <!-- JS로 렌더링 -->
+  <header>
+    <div class="logo-wrap">
+      <div class="logo-icon">⬡</div>
+      <span class="logo-text">itnad/ai · Task</span>
     </div>
-  </div>
+    <p class="subtitle">서비스 선택 → 작업 요청 → 자동 코드 수정</p>
+  </header>
 
-  <!-- 작업 내용 -->
-  <div class="field">
-    <label>작업 내용</label>
-    <textarea id="task" placeholder="요청할 작업을 구체적으로 작성해주세요.&#10;&#10;예) 메인 페이지 상단에 공지사항 배너를 추가해줘. 배경은 노란색, 텍스트는 검정색으로."></textarea>
-  </div>
+  <main id="form-main">
 
-  <!-- 추가 컨텍스트 -->
-  <div class="field">
-    <label>추가 컨텍스트 <span style="font-weight:400;color:var(--text-muted)">(선택)</span></label>
-    <textarea id="context" style="min-height:72px" placeholder="관련 파일 경로, 에러 메시지, 참고 사항 등"></textarea>
-  </div>
+    <!-- ── 서비스 선택 ── -->
+    <div class="card">
+      <div class="field-label"><span class="dot"></span>서비스 선택</div>
+      <div class="svc-input-wrap">
+        <input type="text" id="svc-input"
+          placeholder="서비스명 입력 또는 선택"
+          autocapitalize="none" spellcheck="false" autocorrect="off"
+          oninput="onSvcInput()" onfocus="showSvcDropdown()" />
+        <button class="add-svc-btn" onclick="toggleNewSvcPanel()">+ 새 서비스</button>
+      </div>
+      <div class="svc-dropdown" id="svc-dropdown"></div>
 
-  <!-- 설정 (토큰) -->
-  <div>
-    <button class="settings-toggle" onclick="toggleSettings()">⚙ GitHub 토큰 설정</button>
-    <div class="settings-panel" id="settingsPanel">
-      <div class="field" style="margin-top:10px">
-        <label>GitHub Personal Access Token</label>
-        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px">
-          브라우저에 저장됩니다. 필요 권한: repo (issues:write)
-        </span>
+      <!-- 새 서비스 추가 패널 -->
+      <div class="new-svc-panel" id="new-svc-panel">
+        <div>
+          <label class="sub" for="new-svc-name">서비스명 (폴더명과 동일하게)</label>
+          <input type="text" id="new-svc-name"
+            placeholder="my-service"
+            autocapitalize="none" spellcheck="false"
+            oninput="onNewSvcNameInput()" />
+        </div>
+        <div>
+          <label class="sub">서비스 타입</label>
+          <div class="type-grid">
+            <button class="type-btn selected" data-type="static"    onclick="selectType(this)">static<br><span style="font-weight:400;color:var(--muted)">SPA · 정적</span></button>
+            <button class="type-btn"          data-type="fullstack" onclick="selectType(this)">fullstack<br><span style="font-weight:400;color:var(--muted)">Next.js 등</span></button>
+            <button class="type-btn"          data-type="api"       onclick="selectType(this)">api<br><span style="font-weight:400;color:var(--muted)">백엔드 서버</span></button>
+            <button class="type-btn"          data-type="hybrid"    onclick="selectType(this)">hybrid<br><span style="font-weight:400;color:var(--muted)">FE + BE 분리</span></button>
+          </div>
+        </div>
+        <div class="setup-progress" id="setup-progress">
+          <div class="progress-step" id="step-1"><span class="step-icon">○</span>service.config.json 생성</div>
+          <div class="progress-step" id="step-2"><span class="step-icon">○</span>CLAUDE.md 생성</div>
+          <div class="progress-step" id="step-3"><span class="step-icon">○</span>이슈 템플릿에 서비스 추가</div>
+          <div class="progress-step" id="step-4"><span class="step-icon">○</span>요청 페이지에 서비스 추가</div>
+        </div>
+        <button class="setup-btn" id="setup-btn" onclick="setupNewService()">⚡ 세팅 시작</button>
       </div>
     </div>
+
+    <!-- ── 작업 제목 ── -->
+    <div class="card">
+      <div class="field-label"><span class="dot"></span>작업 제목</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-task"   onclick="setMode('task')">⚡ 작업요청</button>
+        <button class="mode-btn"        id="mode-revert" onclick="setMode('revert')">↩ 되돌리기</button>
+      </div>
+      <div class="revert-hint" id="revert-hint">되돌릴 커밋 해시 7자리를 입력하세요 (예: 5d96b9b)</div>
+      <div class="title-wrap" id="title-wrap">
+        <span class="title-prefix" id="title-prefix"></span>
+        <input type="text" id="title"
+          placeholder="수정 내용을 입력하세요"
+          oninput="onTitleInput(event)"
+          onkeydown="onTitleKeydown(event)" />
+      </div>
+    </div>
+
+    <!-- ── 상세 지시사항 ── -->
+    <div class="card" id="body-card">
+      <div class="field-label"><span class="dot"></span>상세 지시사항</div>
+      <textarea id="body"
+        placeholder="어떤 코드를 어떻게 수정할지 구체적으로 설명해주세요.
+
+예시:
+- 메인 페이지 상단에 공지 배너를 추가해주세요.
+- 로그인 폼의 이메일 유효성 검사가 안 되는 버그를 수정해주세요."
+        oninput="updateCount()"></textarea>
+      <div class="draft-footer">
+        <button type="button" class="restore-prev-btn" onclick="restorePreviousDraft()">↺ 이전 내용</button>
+        <div class="char-count"><span id="char-count">0</span> 자</div>
+      </div>
+    </div>
+
+    <!-- ── 라벨 자동 추가 ── -->
+    <details class="card settings" id="label-settings">
+      <summary>
+        <span class="summary-title">
+          <span class="dot"></span>'service:*' 라벨 자동 추가
+        </span>
+        <label class="toggle-switch summary-toggle" onclick="event.stopPropagation()">
+          <input type="checkbox" id="add-label" checked />
+          <span class="toggle-track"></span>
+        </label>
+        <span class="chev">›</span>
+      </summary>
+      <div class="settings-body">
+        <p class="settings-hint">
+          <strong>켜짐</strong>: 이슈 등록 즉시 AI가 해당 서비스 코드를 자동 수정합니다.<br>
+          <strong>꺼짐</strong>: 이슈만 등록되며, 나중에 GitHub Issues에서 수동으로 라벨을 붙여 실행할 수 있습니다.
+        </p>
+      </div>
+    </details>
+
+    <!-- ── PAT ── -->
+    <details class="card settings" id="pat-settings">
+      <summary>
+        <span class="dot green"></span>Personal Access Token
+        <span class="chev">›</span>
+      </summary>
+      <div class="settings-body">
+        <p class="settings-hint">
+          GitHub 이슈 생성 + 서비스 세팅용 PAT입니다.<br>
+          Fine-grained 권장 — 저장소 선택 + <strong>Issues: Read and write</strong> + <strong>Contents: Read and write</strong>
+        </p>
+        <div class="token-row">
+          <input type="password" id="token"
+            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+            autocapitalize="none" spellcheck="false" />
+          <button type="button" class="eye-btn" id="eye-btn" onclick="togglePwd()">👁</button>
+        </div>
+        <label class="label-toggle">
+          <span class="toggle-desc">토큰을 이 기기에 저장<br><small>(다음 방문 시 자동 입력)</small></span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="save-token" checked />
+            <span class="toggle-track"></span>
+          </label>
+        </label>
+      </div>
+    </details>
+
+    <!-- ── 구글 시트 연동 ── -->
+    <details class="card settings" id="settings">
+      <summary>
+        <span class="dot blue"></span>구글 시트 기록 연동 (선택)
+        <span class="chev">›</span>
+      </summary>
+      <div class="settings-body">
+        <p class="settings-hint">
+          작업 요청을 구글 시트 <strong>작업큐</strong>에 자동 기록하려면 Apps Script 웹앱 URL과 공유 토큰을 입력하세요.
+          비워두면 이슈만 만들고 시트 기록은 건너뜁니다.
+        </p>
+        <div>
+          <label class="sub" for="webapp-url">APPS SCRIPT 웹앱 URL</label>
+          <input type="url" id="webapp-url"
+            placeholder="https://script.google.com/macros/s/.../exec"
+            autocapitalize="none" spellcheck="false"
+            oninput="saveWebappSettings()" />
+        </div>
+        <div>
+          <label class="sub" for="webapp-token">공유 토큰 (SHARED_TOKEN)</label>
+          <div class="token-row">
+            <input type="password" id="webapp-token"
+              placeholder="스크립트 속성과 동일한 값"
+              autocapitalize="none" spellcheck="false"
+              oninput="saveWebappSettings()" />
+            <button type="button" class="eye-btn" id="webapp-eye-btn" onclick="toggleWebappPwd()">👁</button>
+          </div>
+        </div>
+        <label class="label-toggle">
+          <span class="toggle-desc">토큰을 이 기기에 저장</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="save-webapp-token" checked onchange="saveWebappSettings()" />
+            <span class="toggle-track"></span>
+          </label>
+        </label>
+        <span class="saved-flag" id="saved-flag">✓ 저장됨</span>
+      </div>
+    </details>
+
+    <div class="info-badge">
+      ⚡ 이슈 등록 → 서비스 감지 → AI 코드 수정 → 커밋 → <strong>배포</strong>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitIssue()">
+      <div class="spinner"></div>
+      <span class="btn-text">⚡ 작업 등록 · 자동 수정 시작</span>
+    </button>
+
+  </main>
+
+  <!-- ── 완료 화면 ── -->
+  <div class="success-screen" id="success-screen">
+    <div class="check-circle">✓</div>
+    <div class="success-title">작업 등록 완료!</div>
+    <div class="success-desc" id="success-desc">
+      AI가 레포지토리를 분석하고<br>자동으로 코드를 수정합니다.
+      <br><small style="color:var(--muted);font-size:12px;">GitHub Actions에서 진행 상황을 확인하세요.</small>
+    </div>
+    <a id="issue-link"   class="issue-link" href="#" target="_blank">🔗 이슈 확인하기</a>
+    <a id="actions-link" class="issue-link" href="#" target="_blank">⚙️ Actions 보기</a>
+    <button class="reset-btn" onclick="resetForm()">↩ 다시 등록하기</button>
+    <p class="reset-hint">최근 제출한 내용은 그대로 남아 있습니다. 수정해서 재사용하세요.</p>
   </div>
 
-  <!-- 제출 -->
-  <button class="submit-btn" id="submitBtn" onclick="submit()">작업 요청 →</button>
+  <div class="toast" id="toast"></div>
 
-  <!-- 상태 -->
-  <div class="status" id="status"></div>
+  <script>
+    // ══════════════════════════════════════════════════════
+    // 상수 · 설정
+    // ══════════════════════════════════════════════════════
+    const REPO = 'itnad/ai';   // ← 레포지토리명
 
-  <!-- 이슈 링크 -->
-  <a class="issue-link" id="issueLink" target="_blank">
-    <span>🔗</span>
-    <span id="issueLinkText"></span>
-  </a>
+    // localStorage 키
+    const K = {
+      TOKEN:          'ai_gh_token',
+      SERVICES:       'ai_services',
+      SVC_SELECTED:   'ai_svc_selected',
+      WEBAPP_URL:     'ai_webapp_url',
+      WEBAPP_TOKEN:   'ai_webapp_token',
+      DRAFT_MODE:     'ai_draft_mode',
+      SUBMITTED_TITLE_TASK:   'ai_sub_title_task',
+      SUBMITTED_BODY_TASK:    'ai_sub_body_task',
+      SUBMITTED_TITLE_REVERT: 'ai_sub_title_revert',
+      FAILED_TITLE_TASK:      'ai_fail_title_task',
+      FAILED_BODY_TASK:       'ai_fail_body_task',
+      FAILED_TITLE_REVERT:    'ai_fail_title_revert',
+    };
 
-</div>
+    // 기본 서비스 목록 (처음 방문 시 초기값)
+    const DEFAULT_SERVICES = [
+      { name: 'socceroid', type: 'fullstack', color: '#0075ca' },
+      { name: 'wordchain', type: 'static',    color: '#00b4d8' },
+    ];
 
-<script>
-  // ── 서비스 목록 ─────────────────────────────────────────────────────
-  // 서비스 추가 시 여기에만 추가하면 됨
-  const SERVICES = [
-    { name: 'socceroid', type: 'fullstack', color: '#0075ca' },
-    { name: 'wordchain', type: 'static',    color: '#00b4d8' },
-    { name: 'haruil',   type: 'fullstack', color: '#e63946' },
-    // { name: 'new-service', type: 'api', color: '#3fb950' },
-  ];
+    const REVERT_PREFIX = 'REVERT: ';
+    const TYPE_COLORS = {
+      static: '#a1a1aa', fullstack: '#6ee7b7', api: '#fcd34d', hybrid: '#fca5a5'
+    };
 
-  const REPO = 'itnad/ai'; // ← 레포지토리명 확인
+    // ── 상태 ──
+    let selectedSvc  = '';
+    let currentMode  = 'task';
+    let selectedType = 'static';
+    let savedFlagTimer;
 
-  let selectedService = null;
+    const session = {
+      task:   { title: '', body: '' },
+      revert: { title: '' }
+    };
 
-  // 서비스 버튼 렌더링
-  const grid = document.getElementById('serviceGrid');
-  SERVICES.forEach(svc => {
-    const btn = document.createElement('button');
-    btn.className = 'service-btn';
-    btn.dataset.name = svc.name;
-    btn.innerHTML = `
-      <div class="svc-dot" style="background:${svc.color}"></div>
-      <div class="svc-name">${svc.name}</div>
-      <div class="svc-type">${svc.type}</div>
-    `;
-    btn.onclick = () => selectService(svc.name, btn);
-    grid.appendChild(btn);
-  });
+    // ══════════════════════════════════════════════════════
+    // 서비스 목록 관리
+    // ══════════════════════════════════════════════════════
+    function loadServices() {
+      try {
+        const raw = localStorage.getItem(K.SERVICES);
+        return raw ? JSON.parse(raw) : [...DEFAULT_SERVICES];
+      } catch { return [...DEFAULT_SERVICES]; }
+    }
 
-  function selectService(name, btn) {
-    document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedService = name;
-  }
+    function saveServices(list) {
+      localStorage.setItem(K.SERVICES, JSON.stringify(list));
+    }
 
-  // 토큰 저장/불러오기
-  const tokenInput = document.getElementById('ghToken');
-  tokenInput.value = localStorage.getItem('gh_token') || '';
-  tokenInput.addEventListener('change', () => {
-    localStorage.setItem('gh_token', tokenInput.value.trim());
-  });
+    function addService(svc) {
+      const list = loadServices().filter(s => s.name !== svc.name);
+      list.unshift(svc);
+      saveServices(list);
+    }
 
-  function toggleSettings() {
-    const panel = document.getElementById('settingsPanel');
-    panel.classList.toggle('open');
-  }
+    function removeService(name) {
+      const list = loadServices().filter(s => s.name !== name);
+      saveServices(list);
+      if (selectedSvc === name) {
+        selectedSvc = list[0]?.name || '';
+        localStorage.setItem(K.SVC_SELECTED, selectedSvc);
+        document.getElementById('svc-input').value = selectedSvc;
+      }
+    }
 
-  function setStatus(msg, type) {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = `status ${type}`;
-  }
+    function selectSvc(name) {
+      selectedSvc = name;
+      localStorage.setItem(K.SVC_SELECTED, name);
+    }
 
-  // ── 제출 ─────────────────────────────────────────────────────────────
-  async function submit() {
-    const token   = localStorage.getItem('gh_token') || '';
-    const task    = document.getElementById('task').value.trim();
-    const context = document.getElementById('context').value.trim();
+    // ── 드롭다운 렌더 ──
+    function renderSvcDropdown(filter) {
+      const list = loadServices();
+      const dd   = document.getElementById('svc-dropdown');
+      dd.innerHTML = '';
 
-    if (!selectedService) { setStatus('서비스를 선택해주세요.', 'error'); return; }
-    if (!task)             { setStatus('작업 내용을 입력해주세요.', 'error'); return; }
-    if (!token)            { setStatus('GitHub 토큰을 설정해주세요. (⚙ 토큰 설정 클릭)', 'error'); return; }
+      const filtered = filter
+        ? list.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()))
+        : list;
 
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    setStatus('이슈를 생성하는 중...', 'loading');
-
-    // 이슈 본문 구성 (Issue 템플릿 파싱 형식과 일치)
-    const body = [
-      `### 대상 서비스`,
-      ``,
-      selectedService,
-      ``,
-      `### 작업 내용`,
-      ``,
-      task,
-      context ? `\n### 추가 컨텍스트\n\n${context}` : '',
-    ].join('\n');
-
-    try {
-      const [owner, repo] = REPO.split('/');
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-        body: JSON.stringify({
-          title: `[AI:${selectedService}] ${task.slice(0, 60)}${task.length > 60 ? '...' : ''}`,
-          body,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || `HTTP ${res.status}`);
+      if (filtered.length === 0) {
+        dd.innerHTML = `<div class="svc-empty-msg">${filter ? '일치하는 서비스 없음' : '저장된 서비스가 없습니다'}</div>`;
+      } else {
+        filtered.forEach(svc => {
+          const item = document.createElement('div');
+          item.className = 'svc-item' + (svc.name === selectedSvc ? ' selected' : '');
+          const color = svc.color || TYPE_COLORS[svc.type] || '#a1a1aa';
+          item.innerHTML = `
+            <span class="svc-item-dot" style="background:${color}"></span>
+            <span class="svc-item-name">${svc.name}</span>
+            <span class="svc-item-type">${svc.type}</span>
+            <span class="svc-item-check">${svc.name === selectedSvc ? '✓' : ''}</span>
+            <button class="svc-item-del" onclick="event.stopPropagation();removeSvc('${svc.name}')">×</button>`;
+          item.addEventListener('click', () => {
+            selectSvc(svc.name);
+            document.getElementById('svc-input').value = svc.name;
+            hideSvcDropdown();
+          });
+          dd.appendChild(item);
+        });
       }
 
-      const issue = await res.json();
-      setStatus(`✅ 이슈 #${issue.number} 생성 완료. AI가 곧 작업을 시작합니다.`, 'success');
-
-      const linkEl = document.getElementById('issueLink');
-      const linkText = document.getElementById('issueLinkText');
-      linkEl.href = issue.html_url;
-      linkText.textContent = `이슈 #${issue.number} 보기 → ${issue.html_url}`;
-      linkEl.classList.add('visible');
-
-      // 입력 초기화
-      document.getElementById('task').value = '';
-      document.getElementById('context').value = '';
-      document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('selected'));
-      selectedService = null;
-
-    } catch (e) {
-      setStatus(`❌ 오류: ${e.message}`, 'error');
-    } finally {
-      btn.disabled = false;
+      dd.classList.add('show');
     }
-  }
-</script>
+
+    function showSvcDropdown() {
+      const filter = document.getElementById('svc-input').value.trim();
+      renderSvcDropdown(filter);
+    }
+
+    function hideSvcDropdown() {
+      document.getElementById('svc-dropdown').classList.remove('show');
+    }
+
+    function onSvcInput() {
+      renderSvcDropdown(document.getElementById('svc-input').value.trim());
+    }
+
+    function removeSvc(name) {
+      removeService(name);
+      renderSvcDropdown(document.getElementById('svc-input').value.trim());
+    }
+
+    document.addEventListener('click', e => {
+      const wrap = document.getElementById('svc-input').closest('.card');
+      if (!wrap.contains(e.target)) hideSvcDropdown();
+    });
+
+    // ══════════════════════════════════════════════════════
+    // 새 서비스 추가 패널
+    // ══════════════════════════════════════════════════════
+    function toggleNewSvcPanel() {
+      const panel = document.getElementById('new-svc-panel');
+      const isOpen = panel.classList.toggle('show');
+      if (isOpen) {
+        document.getElementById('new-svc-name').focus();
+        document.getElementById('setup-progress').classList.remove('show');
+        resetSteps();
+      }
+    }
+
+    function selectType(btn) {
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedType = btn.dataset.type;
+    }
+
+    function onNewSvcNameInput() {
+      const name = document.getElementById('new-svc-name').value.trim();
+      document.getElementById('setup-btn').disabled = !name;
+    }
+
+    function resetSteps() {
+      ['step-1','step-2','step-3','step-4'].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'progress-step';
+        el.querySelector('.step-icon').textContent = '○';
+      });
+    }
+
+    function setStep(id, state) {
+      const el = document.getElementById(id);
+      el.className = 'progress-step ' + state;
+      el.querySelector('.step-icon').textContent =
+        state === 'done'  ? '✓' :
+        state === 'active'? '…' :
+        state === 'error' ? '✗' : '○';
+    }
+
+    async function setupNewService() {
+      const name  = document.getElementById('new-svc-name').value.trim();
+      const token = document.getElementById('token').value.trim();
+      const type  = selectedType;
+
+      if (!name)  return showToast('서비스명을 입력하세요.', 'error');
+      if (!token) return showToast('GitHub PAT를 먼저 입력하세요. (Personal Access Token 섹션)', 'error');
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(name))
+        return showToast('서비스명은 영소문자·숫자·하이픈만 사용 가능합니다.', 'error');
+
+      const btn = document.getElementById('setup-btn');
+      btn.disabled = true;
+      btn.textContent = '세팅 중...';
+      document.getElementById('setup-progress').classList.add('show');
+      resetSteps();
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+
+      const b64 = str => btoa(unescape(encodeURIComponent(str)));
+      const apiGet  = path => fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, { headers });
+      const apiPut  = (path, msg, content, sha) => fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ message: msg, content: b64(content), ...(sha ? { sha } : {}) })
+      });
+
+      try {
+        // ── Step 1: service.config.json ──
+        setStep('step-1', 'active');
+        const config = JSON.stringify({
+          name,
+          type,
+          description: `${name} 서비스`,
+          stack: {
+            frontend: type === 'api' ? 'none' : 'react',
+            backend:  type === 'static' ? 'none' : 'node'
+          },
+          deploy: { platform: 'none', region: 'icn1' },
+          build:  { command: 'npm run build', output_dir: 'dist' }
+        }, null, 2);
+        const r1 = await apiPut(`${name}/service.config.json`, `chore: add ${name} service config`, config);
+        if (!r1.ok) throw new Error(`service.config.json 생성 실패 (${r1.status})`);
+        setStep('step-1', 'done');
+
+        // ── Step 2: CLAUDE.md ──
+        setStep('step-2', 'active');
+        const claudeMd = `# ${name}
+
+## 서비스 개요
+이 서비스는 ...
+
+## 기술 스택
+- Type: ${type}
+- Frontend: ${type === 'api' ? '없음' : 'React + Vite'}
+- Backend: ${type === 'static' ? '없음' : 'Node.js'}
+
+## 주요 파일
+- src/ : 소스 루트
+
+## 코딩 규칙
+- 모든 주석과 출력은 한국어(한글)로 작성할 것
+
+## 주의사항
+- .env 파일은 절대 수정하지 말 것
+- 이 서비스 폴더(${name}/) 밖의 파일은 절대 수정하지 말 것
+`;
+        const r2 = await apiPut(`${name}/CLAUDE.md`, `chore: add ${name} CLAUDE.md`, claudeMd);
+        if (!r2.ok) throw new Error(`CLAUDE.md 생성 실패 (${r2.status})`);
+        setStep('step-2', 'done');
+
+        // ── Step 3: 이슈 템플릿 수정 ──
+        setStep('step-3', 'active');
+        const tmplPath = '.github/ISSUE_TEMPLATE/ai-task.yml';
+        const tmplRes  = await apiGet(tmplPath);
+        if (tmplRes.ok) {
+          const tmplData = await tmplRes.json();
+          let tmplContent = decodeURIComponent(escape(atob(tmplData.content.replace(/\n/g,''))));
+          if (!tmplContent.includes(`- ${name}`)) {
+            // options 블록의 마지막 항목 뒤에 추가
+            tmplContent = tmplContent.replace(
+              /^(\s+options:\s*\n(?:\s+-[^\n]+\n)*)/m,
+              `$1        - ${name}\n`
+            );
+            const r3 = await apiPut(tmplPath, `chore: add ${name} to issue template`, tmplContent, tmplData.sha);
+            if (!r3.ok) throw new Error(`이슈 템플릿 수정 실패 (${r3.status})`);
+          }
+        }
+        setStep('step-3', 'done');
+
+        // ── Step 4: ai-request.html SERVICES 배열 수정 ──
+        setStep('step-4', 'active');
+        const htmlPath = 'ai-task-request.html';
+        const htmlRes  = await apiGet(htmlPath);
+        if (htmlRes.ok) {
+          const htmlData = await htmlRes.json();
+          let htmlContent = decodeURIComponent(escape(atob(htmlData.content.replace(/\n/g,''))));
+          const color = TYPE_COLORS[type] || '#a1a1aa';
+          const newEntry = `  { name: '${name}', type: '${type}', color: '${color}' },`;
+          if (!htmlContent.includes(`name: '${name}'`)) {
+            // DEFAULT_SERVICES 배열 마지막에 추가
+            htmlContent = htmlContent.replace(
+              /^(\s+\{ name: '[^']+', type: '[^']+', color: '[^']+' \},\n)(\s*\];)/m,
+              `$1${newEntry}\n$2`
+            );
+            const r4 = await apiPut(htmlPath, `chore: add ${name} to task request page`, htmlContent, htmlData.sha);
+            if (!r4.ok) throw new Error(`요청 페이지 수정 실패 (${r4.status})`);
+          }
+        }
+        setStep('step-4', 'done');
+
+        // ── 완료 ──
+        const color = TYPE_COLORS[type] || '#a1a1aa';
+        addService({ name, type, color });
+        selectSvc(name);
+        document.getElementById('svc-input').value = name;
+
+        showToast(`✓ ${name} 서비스 세팅 완료!\n페이지를 새로고침하면 최신 상태가 반영됩니다.`, 'success');
+
+        setTimeout(() => {
+          document.getElementById('new-svc-panel').classList.remove('show');
+          hideSvcDropdown();
+        }, 1800);
+
+      } catch (e) {
+        showToast('세팅 중 오류: ' + e.message, 'error');
+        ['step-1','step-2','step-3','step-4'].forEach(id => {
+          if (document.getElementById(id).classList.contains('active'))
+            setStep(id, 'error');
+        });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ 세팅 시작';
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 모드 (작업요청 / 되돌리기)
+    // ══════════════════════════════════════════════════════
+    function applyModeUI(mode) {
+      currentMode = mode;
+      const titleInp = document.getElementById('title');
+      const prefix   = document.getElementById('title-prefix');
+      const hint     = document.getElementById('revert-hint');
+      const bodyCard = document.getElementById('body-card');
+      const btnTask  = document.getElementById('mode-task');
+      const btnRev   = document.getElementById('mode-revert');
+
+      if (mode === 'revert') {
+        btnTask.classList.remove('active'); btnRev.classList.add('active');
+        prefix.textContent = REVERT_PREFIX;
+        hint.classList.add('show');
+        bodyCard.classList.add('revert-hidden');
+        titleInp.placeholder = '5d96b9b 등 되돌릴 commit hash 입력';
+      } else {
+        btnTask.classList.add('active'); btnRev.classList.remove('active');
+        prefix.textContent = '';
+        hint.classList.remove('show');
+        bodyCard.classList.remove('revert-hidden');
+        titleInp.placeholder = '수정 내용을 입력하세요';
+      }
+    }
+
+    function setMode(mode) {
+      if (mode === currentMode) return;
+      captureSession(currentMode);
+      applyModeUI(mode);
+      restoreSession(mode);
+      localStorage.setItem(K.DRAFT_MODE, mode);
+      document.getElementById('title').focus();
+    }
+
+    function captureSession(mode) {
+      if (mode === 'revert') session.revert.title = document.getElementById('title').value;
+      else { session.task.title = document.getElementById('title').value; session.task.body = document.getElementById('body').value; }
+    }
+
+    function restoreSession(mode) {
+      if (mode === 'revert') document.getElementById('title').value = session.revert.title;
+      else {
+        document.getElementById('title').value = session.task.title;
+        document.getElementById('body').value  = session.task.body;
+        updateCount();
+      }
+    }
+
+    function onTitleKeydown(e) {
+      if (currentMode !== 'revert') return;
+      if (e.key === 'Backspace' && document.getElementById('title').value === '') e.preventDefault();
+    }
+
+    function onTitleInput(e) {
+      if (currentMode !== 'revert') return;
+      const inp = document.getElementById('title');
+      if (inp.value.startsWith(REVERT_PREFIX)) inp.value = inp.value.slice(REVERT_PREFIX.length);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 드래프트 저장 / 복원
+    // ══════════════════════════════════════════════════════
+    function hydrateSession() {
+      session.task.title   = localStorage.getItem(K.FAILED_TITLE_TASK)   || localStorage.getItem(K.SUBMITTED_TITLE_TASK)   || '';
+      session.task.body    = localStorage.getItem(K.FAILED_BODY_TASK)    || localStorage.getItem(K.SUBMITTED_BODY_TASK)    || '';
+      session.revert.title = localStorage.getItem(K.FAILED_TITLE_REVERT) || localStorage.getItem(K.SUBMITTED_TITLE_REVERT) || '';
+    }
+
+    function saveSubmitted(mode) {
+      if (mode === 'revert') {
+        localStorage.setItem(K.SUBMITTED_TITLE_REVERT, document.getElementById('title').value);
+        localStorage.removeItem(K.FAILED_TITLE_REVERT);
+      } else {
+        localStorage.setItem(K.SUBMITTED_TITLE_TASK, document.getElementById('title').value);
+        localStorage.setItem(K.SUBMITTED_BODY_TASK,  document.getElementById('body').value);
+        localStorage.removeItem(K.FAILED_TITLE_TASK);
+        localStorage.removeItem(K.FAILED_BODY_TASK);
+      }
+    }
+
+    function saveFailed() {
+      if (currentMode === 'revert') {
+        localStorage.setItem(K.FAILED_TITLE_REVERT, document.getElementById('title').value);
+      } else {
+        localStorage.setItem(K.FAILED_TITLE_TASK, document.getElementById('title').value);
+        localStorage.setItem(K.FAILED_BODY_TASK,  document.getElementById('body').value);
+      }
+    }
+
+    function restorePreviousDraft() {
+      if (currentMode !== 'task') return;
+      const t = localStorage.getItem(K.SUBMITTED_TITLE_TASK) || '';
+      const b = localStorage.getItem(K.SUBMITTED_BODY_TASK)  || '';
+      if (!t && !b) return showToast('불러올 이전 내용이 없습니다.', 'error');
+      document.getElementById('title').value = t;
+      document.getElementById('body').value  = b;
+      updateCount();
+      showToast('이전 내용을 불러왔습니다.');
+    }
+
+    function updateCount() {
+      document.getElementById('char-count').textContent = document.getElementById('body').value.length;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 설정 저장
+    // ══════════════════════════════════════════════════════
+    function saveWebappSettings() {
+      localStorage.setItem(K.WEBAPP_URL, document.getElementById('webapp-url').value.trim());
+      const save  = document.getElementById('save-webapp-token').checked;
+      const token = document.getElementById('webapp-token').value.trim();
+      if (save && token) localStorage.setItem(K.WEBAPP_TOKEN, token);
+      else localStorage.removeItem(K.WEBAPP_TOKEN);
+      const flag = document.getElementById('saved-flag');
+      flag.classList.add('show');
+      clearTimeout(savedFlagTimer);
+      savedFlagTimer = setTimeout(() => flag.classList.remove('show'), 1200);
+    }
+
+    function togglePwd() {
+      const inp = document.getElementById('token');
+      const btn = document.getElementById('eye-btn');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+
+    function toggleWebappPwd() {
+      const inp = document.getElementById('webapp-token');
+      const btn = document.getElementById('webapp-eye-btn');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 구글 시트 로그
+    // ══════════════════════════════════════════════════════
+    function logToSheet(payload) {
+      const url   = document.getElementById('webapp-url').value.trim();
+      const token = document.getElementById('webapp-token').value.trim();
+      if (!url) return;
+      try {
+        fetch(url, {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token, action: 'log', service: selectedSvc, ...payload })
+        });
+      } catch {}
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 이슈 제출
+    // ══════════════════════════════════════════════════════
+    async function submitIssue() {
+      const svc      = document.getElementById('svc-input').value.trim() || selectedSvc;
+      const token    = document.getElementById('token').value.trim();
+      const rawTitle = document.getElementById('title').value.trim();
+      const body     = document.getElementById('body').value.trim();
+      const addLbl   = document.getElementById('add-label').checked;
+      const saveT    = document.getElementById('save-token').checked;
+
+      if (!svc)      return showToast('서비스를 선택하세요.', 'error');
+      if (!token)    return showToast('GitHub PAT를 입력하세요.', 'error');
+      if (!rawTitle) return showToast('작업 제목을 입력하세요.', 'error');
+
+      let title, issueBody;
+
+      if (currentMode === 'revert') {
+        if (rawTitle.length < 5) return showToast('커밋 해시를 입력하세요.', 'error');
+        title     = REVERT_PREFIX + rawTitle;
+        issueBody = `### 대상 서비스\n\n${svc}\n\n커밋 ${rawTitle} 을 되돌립니다.\n\nREVERT: ${rawTitle}`;
+      } else {
+        if (body.length < 10) return showToast('상세 지시사항을 10자 이상 입력하세요.', 'error');
+        title     = rawTitle.startsWith('[AI]') ? rawTitle : `[AI] ${rawTitle}`;
+        issueBody = `### 대상 서비스\n\n${svc}\n\n### 작업 내용\n\n${body}`;
+      }
+
+      if (saveT) localStorage.setItem(K.TOKEN, token);
+      else localStorage.removeItem(K.TOKEN);
+      selectSvc(svc);
+      // 서비스 목록에 없으면 추가
+      const list = loadServices();
+      if (!list.find(s => s.name === svc)) {
+        addService({ name: svc, type: 'static', color: '#a1a1aa' });
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      const ghHeaders = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+
+      try {
+        // 라벨 미리 생성 시도 (없으면 issue-auto-label.yml이 자동 생성)
+        if (addLbl) {
+          await fetch(`https://api.github.com/repos/${REPO}/labels`, {
+            method: 'POST', headers: ghHeaders,
+            body: JSON.stringify({ name: `service:${svc}`, color: 'a1a1aa', description: `${svc} 서비스 AI 작업` })
+          }); // 422 (이미 존재) 무시
+        }
+
+        const res = await fetch(`https://api.github.com/repos/${REPO}/issues`, {
+          method: 'POST', headers: ghHeaders,
+          body: JSON.stringify({
+            title,
+            body: issueBody,
+            labels: addLbl ? [`service:${svc}`] : []
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        const issue = await res.json();
+
+        logToSheet({ issue: issue.number, url: issue.html_url, title, body: issueBody });
+
+        document.getElementById('success-desc').innerHTML =
+          `<strong style="color:var(--text)">${svc}</strong> 서비스를<br>AI가 분석하고 자동으로 수정합니다.<br>
+          <small style="color:var(--muted);font-size:12px;">GitHub Actions에서 진행 상황을 확인하세요.</small>`;
+        document.getElementById('issue-link').href   = issue.html_url;
+        document.getElementById('actions-link').href = `https://github.com/${REPO}/actions`;
+
+        saveSubmitted(currentMode);
+        localStorage.setItem(K.DRAFT_MODE, currentMode);
+
+        document.getElementById('form-main').classList.add('done');
+        document.getElementById('success-screen').classList.add('show');
+
+      } catch (e) {
+        saveFailed();
+        showToast((e.message || '이슈 등록에 실패했습니다.') + '\n(입력 내용은 임시 저장됨)', 'error');
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 토스트
+    // ══════════════════════════════════════════════════════
+    let toastTimer;
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+      t.className = `toast ${type} show`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 폼 초기화 / 리셋
+    // ══════════════════════════════════════════════════════
+    function resetForm() {
+      const mode = localStorage.getItem(K.DRAFT_MODE) === 'revert' ? 'revert' : 'task';
+      hydrateSession();
+      applyModeUI(mode);
+      restoreSession(mode);
+      document.getElementById('form-main').classList.remove('done');
+      document.getElementById('success-screen').classList.remove('show');
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 초기화
+    // ══════════════════════════════════════════════════════
+    // ── 스킨 선택 ──
+    const SKIN_KEY = 'ai_skin';
+
+    function applySkin(skin) {
+      const body = document.body;
+      body.removeAttribute('data-skin');
+      if (skin && skin !== 'default') {
+        body.setAttribute('data-skin', skin);
+      }
+      localStorage.setItem(SKIN_KEY, skin);
+      // select 동기화
+      const sel = document.getElementById('skin-select');
+      if (sel) sel.value = skin || 'default';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // 스킨 복원
+      const savedSkin = localStorage.getItem(SKIN_KEY) || 'default';
+      applySkin(savedSkin);
+
+      // PAT
+      const savedToken = localStorage.getItem(K.TOKEN);
+      if (savedToken) document.getElementById('token').value = savedToken;
+
+      // 서비스 선택
+      const lastSvc = localStorage.getItem(K.SVC_SELECTED) || loadServices()[0]?.name || '';
+      if (lastSvc) {
+        selectedSvc = lastSvc;
+        document.getElementById('svc-input').value = lastSvc;
+      }
+
+      // 웹앱
+      const webappUrl   = localStorage.getItem(K.WEBAPP_URL);
+      const webappToken = localStorage.getItem(K.WEBAPP_TOKEN);
+      if (webappUrl)   document.getElementById('webapp-url').value   = webappUrl;
+      if (webappToken) document.getElementById('webapp-token').value = webappToken;
+
+      // 드래프트
+      const mode = localStorage.getItem(K.DRAFT_MODE) === 'revert' ? 'revert' : 'task';
+      hydrateSession();
+      applyModeUI(mode);
+      restoreSession(mode);
+
+      // 새 서비스 세팅 버튼 초기 비활성
+      document.getElementById('setup-btn').disabled = true;
+    });
+  </script>
 </body>
 </html>
