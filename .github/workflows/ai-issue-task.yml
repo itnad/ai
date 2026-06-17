@@ -1,0 +1,153 @@
+name: AI Issue Task
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  # ── 1. 서비스 감지 ──────────────────────────────────────────────────
+  detect-service:
+    runs-on: ubuntu-latest
+    outputs:
+      service: ${{ steps.detect.outputs.service }}
+      has_service: ${{ steps.detect.outputs.has_service }}
+    steps:
+      - name: Detect target service from label
+        id: detect
+        run: |
+          LABEL="${{ github.event.label.name }}"
+          # 라벨 형식: "service:서비스명" 또는 단순 "ai" (이슈 본문에서 파싱)
+          if [[ "$LABEL" == service:* ]]; then
+            SERVICE="${LABEL#service:}"
+            echo "service=$SERVICE" >> $GITHUB_OUTPUT
+            echo "has_service=true" >> $GITHUB_OUTPUT
+          else
+            echo "service=" >> $GITHUB_OUTPUT
+            echo "has_service=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ── 2. Claude Code 작업 ─────────────────────────────────────────────
+  ai-task:
+    needs: detect-service
+    if: needs.detect-service.outputs.has_service == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    env:
+      SERVICE: ${{ needs.detect-service.outputs.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate service directory exists
+        id: validate
+        run: |
+          if [ ! -d "$SERVICE" ]; then
+            echo "❌ 서비스 디렉토리 '$SERVICE' 가 존재하지 않습니다." 
+            gh issue comment ${{ github.event.issue.number }} \
+              --body "❌ **오류**: \`$SERVICE\` 디렉토리가 레포지토리에 존재하지 않습니다. 서비스명을 확인해주세요."
+            exit 1
+          fi
+          # service.config.json 읽기
+          if [ -f "$SERVICE/service.config.json" ]; then
+            PLATFORM=$(jq -r '.deploy.platform // "none"' $SERVICE/service.config.json)
+            STACK_FE=$(jq -r '.stack.frontend // "none"' $SERVICE/service.config.json)
+            STACK_BE=$(jq -r '.stack.backend // "none"' $SERVICE/service.config.json)
+            echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+            echo "stack_fe=$STACK_FE" >> $GITHUB_OUTPUT
+            echo "stack_be=$STACK_BE" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude Code on service
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          max_turns: "50"
+          allowed_tools: "Bash,Edit,Write,Read"
+          show_full_output: "true"
+          custom_instructions: |
+            ## 작업 범위 제한 (필수 준수)
+            - 현재 작업 대상 서비스: **${{ env.SERVICE }}**
+            - 모든 파일 조작은 반드시 `${{ env.SERVICE }}/` 디렉토리 내에서만 수행할 것
+            - 다른 서비스 디렉토리나 루트 파일(.github 제외)은 절대 수정하지 말 것
+            
+            ## 작업 완료 후
+            - 변경사항을 커밋하고 푸시할 것
+            - 이슈에 작업 완료 코멘트를 남길 것 (변경된 파일 목록 포함)
+            
+            ## 서비스 컨텍스트
+            - 서비스 루트: ./${{ env.SERVICE }}/
+            - CLAUDE.md가 있다면 반드시 먼저 읽을 것
+
+  # ── 3. 배포 (service.config.json 기반 분기) ─────────────────────────
+  deploy:
+    needs: [detect-service, ai-task]
+    if: needs.detect-service.outputs.has_service == 'true'
+    runs-on: ubuntu-latest
+    env:
+      SERVICE: ${{ needs.detect-service.outputs.service }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main  # ai-task가 푸시한 최신 커밋 반영
+
+      - name: Read deploy config
+        id: config
+        run: |
+          if [ -f "$SERVICE/service.config.json" ]; then
+            PLATFORM=$(jq -r '.deploy.platform // "none"' $SERVICE/service.config.json)
+            TYPE=$(jq -r '.type // "static"' $SERVICE/service.config.json)
+            echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+            echo "type=$TYPE" >> $GITHUB_OUTPUT
+          else
+            echo "platform=none" >> $GITHUB_OUTPUT
+            echo "type=none" >> $GITHUB_OUTPUT
+          fi
+
+      # Vercel 배포
+      - name: Deploy to Vercel
+        if: steps.config.outputs.platform == 'vercel'
+        run: |
+          npm install -g vercel
+          cd $SERVICE
+          vercel deploy --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets[format('VERCEL_PROJECT_ID_{0}', env.SERVICE)] }}
+
+      # Render 배포 (Deploy Hook URL 방식)
+      - name: Deploy to Render
+        if: steps.config.outputs.platform == 'render'
+        run: |
+          HOOK_VAR="RENDER_DEPLOY_HOOK_$(echo $SERVICE | tr '[:lower:]' '[:upper:]')"
+          HOOK_URL="${!HOOK_VAR}"
+          if [ -n "$HOOK_URL" ]; then
+            curl -X POST "$HOOK_URL"
+            echo "✅ Render 배포 트리거 완료"
+          else
+            echo "⚠️ $HOOK_VAR 시크릿이 설정되지 않았습니다."
+          fi
+        env:
+          RENDER_DEPLOY_HOOK_SOCCEROID: ${{ secrets.RENDER_DEPLOY_HOOK_SOCCEROID }}
+          RENDER_DEPLOY_HOOK_WORDCHAIN: ${{ secrets.RENDER_DEPLOY_HOOK_WORDCHAIN }}
+          # 서비스 추가 시 여기에 추가
+
+      # GitHub Pages 배포
+      - name: Deploy to GitHub Pages
+        if: steps.config.outputs.platform == 'github-pages'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./${{ env.SERVICE }}/dist
+          destination_dir: ${{ env.SERVICE }}
+
+      - name: Skip deploy (no platform configured)
+        if: steps.config.outputs.platform == 'none'
+        run: echo "ℹ️ service.config.json에 배포 플랫폼이 설정되지 않아 배포를 건너뜁니다."
