@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dancing With the Wind</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  #stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; }
+  canvas#c { width: 100%; height: 100%; display: block; background: #000; cursor: pointer; }
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,0.12); opacity: 0; transition: opacity .4s; }
+  #bar > i { display: block; height: 100%; width: 0; background: rgba(255,226,170,0.8); }
+  #stage:hover #bar { opacity: 1; }
+  #play { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
+    background: rgba(0,0,0,0.35); border: 2px solid rgba(255,236,200,0.75); cursor: pointer; display: none; padding: 0; }
+  #play::after { content: ""; position: absolute; left: 46px; top: 34px; border-style: solid; border-width: 26px 0 26px 42px;
+    border-color: transparent transparent transparent rgba(255,236,200,0.9); }
+  #play:hover { background: rgba(0,0,0,0.5); }
+  #load { position: absolute; left: 35%; right: 35%; top: 50%; height: 3px; background: rgba(255,255,255,0.15); }
+  #load > i { display: block; height: 100%; width: 0; background: rgba(255,226,170,0.85); transition: width .2s; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c" width="1920" height="1080"></canvas><div id="bar"><i></i></div><div id="load"><i></i></div><button id="play" aria-label="Play"></button></div>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>
