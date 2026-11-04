@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "title": "Dancing With the Wind - Visual Bible",
+  "format": {
+    "aspect_ratio": "16:9",
+    "resolution": "1920x1080",
+    "fps": 24,
+    "codec": "H.264 (libx264) in MP4",
+    "total_duration_s": 90.0,
+    "total_frames": 2160
+  },
+  "style_prefix": "Photorealistic live-action cinematic film still, shot on ARRI Alexa 65 with vintage anamorphic lenses, shallow depth of field, subtle 35mm film grain, natural skin texture, surreal magical-realism tone, 16:9, 24fps motion cadence.",
+  "style_suffix": "No text, no subtitles, no captions, no logos, no watermark, no dialogue, no lip movement.",
+  "negative_prompt": "text, subtitles, captions, watermark, logo, title card, cartoon, anime, illustration, CGI look, video game render, extra limbs, deformed hands, distorted face, duplicate person, multiple protagonists, flickering, morphing identity, lip sync, talking",
+  "camera_rules": {
+    "lens": "anamorphic 40mm-75mm equivalents, oval bokeh, gentle horizontal flare",
+    "movement": "slow deliberate camera moves only: dolly-in, slow push, slow orbit, locked-off. No whip pans, no handheld shake.",
+    "protagonist_framing": "keep the protagonist's face clearly visible and consistently lit in every shot; avoid extreme wide shots where the face is unreadable, except S05/S06 (staircase scale) and S15 (final walk away)."
+  },
+  "acts": {
+    "act1_street_and_sacrifice": {
+      "shots": ["S01", "S02", "S03", "S04"],
+      "palette": "cold desaturated teal and slate blue with sodium-orange streetlight accents; memories glow warm amber before turning metallic gold",
+      "lighting": "night, wet surfaces, practical streetlights, soft low-key",
+      "mood": "longing, restless wind"
+    },
+    "act2_ascent": {
+      "shots": ["S05", "S06"],
+      "palette": "monochrome gold and black; endless golden staircase in a black void with slow-moving dark clouds, shafts of pale gold light from above",
+      "lighting": "single strong top light, deep shadows",
+      "mood": "relentless, grinding, time passing"
+    },
+    "act3_palace": {
+      "shots": ["S07", "S08"],
+      "palette": "saturated royal gold, warm ivory, champagne highlights, candlelight",
+      "lighting": "thousands of candles and chandeliers, warm high-key glamour",
+      "mood": "triumph, intoxication"
+    },
+    "act4_uncanny_collapse": {
+      "shots": ["S09", "S10", "S11", "S12"],
+      "palette": "the gold drains toward sickly brass and grey; cracks reveal warm amber memory light inside the walls",
+      "lighting": "chandeliers flicker, color temperature drifts colder, hard shadows appear",
+      "mood": "dread, recognition, grief"
+    },
+    "act5_return": {
+      "shots": ["S13", "S14", "S15"],
+      "palette": "near-black, desaturated blue-grey, a single distant cold streetlight",
+      "lighting": "almost no light; the man is a silhouette with faint rim light",
+      "mood": "emptiness, acceptance"
+    }
+  },
+  "locations": {
+    "L1_seoul_alley": "a narrow Seoul back alley at night (Euljiro style): wet black asphalt reflecting a single orange sodium streetlight, old brick walls, tangled power lines overhead, shuttered shop fronts, dead leaves and loose paper swirling in a strong wind",
+    "L1b_seoul_alley_ruined": "the same narrow Seoul back alley decades later: streetlight dead, shop fronts demolished to rubble, brick walls collapsed, power lines hanging loose, no people, thick darkness, wind still blowing dust",
+    "L2_kitchen": "a small humble Korean apartment kitchen at night, warm tungsten light, a wooden table with rice bowls and side dishes, a window with wind rattling it",
+    "L3_pojangmacha": "an orange-tented pojangmacha street stall at night with steam, plastic stools and strings of bare bulbs swaying in the wind",
+    "L4_mirror_room": "a bare rented room with a cracked full-length mirror on a wall, a bare bulb, wind pushing a thin curtain",
+    "L5_golden_staircase": "an impossibly long golden staircase rising through a black void, each step inlaid with gilded fragments of photographs, letters and music-box parts, dark clouds drifting past, pale gold light from far above",
+    "L6_golden_palace": "a vast golden palace ballroom blending European baroque and Korean royal palace motifs: gilded dancheong patterns on massive columns, a mirrored floor, hundreds of candles, towering chandeliers; the walls are entirely made of gilded family photographs, letters and music-box parts fused into ornament",
+    "L7_void": "an endless black void with faint drifting gold dust, no floor visible, the man lit only by a soft dying top light"
+  },
+  "continuity_checks": {
+    "mole": "the small mole below the outer corner of the left eye must be present in every face-visible shot",
+    "coat": "charcoal overcoat present in all 15 shots",
+    "aging_order": "A_20s -> B_30s -> C_40s -> D_50s -> E_70s, never reversed",
+    "wind": "visible wind (hair, coat hem, leaves, curtains, gown train) in every shot; it is the film's motif",
+    "no_text": "any readable text in a frame is a reject"
+  }
+}

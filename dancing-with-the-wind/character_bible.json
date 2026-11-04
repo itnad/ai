@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "title": "Dancing With the Wind (바람을 붙잡고 춤을 췄구나) - Character Bible",
+  "rules": {
+    "single_protagonist": "Exactly one protagonist appears in every shot unless the shot explicitly lists other characters.",
+    "identity_anchor": "Every prompt must include the protagonist's fixed identity string (protagonist.identity_core) plus the age-stage descriptor for that shot.",
+    "wardrobe_lock": "The charcoal wool overcoat + white dress shirt + black trousers are worn in EVERY shot. Only wear/condition changes with age.",
+    "no_text": "No dialogue, subtitles, captions, logos or readable text in any shot."
+  },
+  "protagonist": {
+    "name": "JIHO",
+    "identity_core": "a Korean man with a lean build, sharp jawline, narrow dark eyes with a faint double eyelid, straight nose, and a small distinctive mole just below the outer corner of his left eye, wearing a long charcoal wool overcoat over a white dress shirt with the top button undone and black trousers",
+    "age_stages": {
+      "A_20s": {
+        "label": "early 20s",
+        "descriptor": "early 20s, smooth youthful face, thick jet-black hair swept back and slightly windblown, bright hopeful eyes, upright energetic posture; overcoat crisp and new",
+        "used_in_shots": ["S01", "S02", "S03"]
+      },
+      "B_30s": {
+        "label": "mid 30s",
+        "descriptor": "mid 30s, faint lines around the eyes, jet-black hair neatly swept back with a single streak of grey at the left temple, focused determined expression; overcoat slightly creased",
+        "used_in_shots": ["S04", "S05"]
+      },
+      "C_40s": {
+        "label": "mid 40s",
+        "descriptor": "mid 40s, hair half grey at the temples, deeper lines on the forehead, tired but ambitious eyes, shoulders slightly tense; overcoat worn at the cuffs",
+        "used_in_shots": ["S06"]
+      },
+      "D_50s": {
+        "label": "mid 50s",
+        "descriptor": "mid 50s, mostly silver-grey hair swept back, pronounced crow's feet, dignified weathered face, slightly stooped shoulders; overcoat faded with frayed hem",
+        "used_in_shots": ["S07", "S08", "S09", "S10", "S11", "S12"]
+      },
+      "E_70s": {
+        "label": "early 70s",
+        "descriptor": "early 70s, thin white hair, deeply wrinkled gaunt face, sunken eyes, frail stooped body, slow careful movements; overcoat threadbare and dusty",
+        "used_in_shots": ["S13", "S14", "S15"]
+      }
+    }
+  },
+  "supporting": {
+    "the_woman": {
+      "name": "THE MUSE",
+      "identity_core": "an impossibly beautiful Korean woman with long straight jet-black hair reaching her waist, luminous pale skin, wearing a flowing champagne-gold silk gown with a long train that moves like liquid",
+      "ideal_form": "serene gentle smile, warm eyes, face softly lit and slightly out of focus, as if remembered rather than seen",
+      "uncanny_form": "the same woman but her skin has a faint porcelain sheen, her smile is fixed and symmetrical, her eyes are glassy and do not blink, her movements are a fraction too smooth, like a wind-up doll",
+      "used_in_shots": ["S08", "S09", "S12"]
+    },
+    "the_crowd": {
+      "identity_core": "hundreds of guests in identical black tuxedos and black floor-length gowns, all wearing smooth featureless gold masks, applauding in perfect unison",
+      "uncanny_form": "the guests repeat the exact same clap and bow in a mechanical loop, like animatronics, with jerky identical timing",
+      "used_in_shots": ["S07", "S09"]
+    },
+    "family": {
+      "identity_core": "an elderly Korean mother and father in modest home clothes and a younger sister around ten years old, seated at a small kitchen table",
+      "used_in_shots": ["S02", "S10"]
+    },
+    "friends": {
+      "identity_core": "three young Korean men in their early 20s in casual jackets, laughing at an orange-tented pojangmacha street food stall",
+      "used_in_shots": ["S03"]
+    }
+  },
+  "props": {
+    "crown": "a thin minimalist crown of pure polished gold with no jewels",
+    "music_box": "a small walnut music box with a tiny brass ballerina, its parts later seen shattered: gears, the ballerina, a comb of brass tines",
+    "family_photo": "a creased Polaroid-style photograph of a family of four at a kitchen table",
+    "letters": "handwritten letters on cream paper, folded, with no readable text (blurred ink)"
+  }
+}

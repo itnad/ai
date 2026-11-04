@@ -1,0 +1,9 @@
+.env
+clips/*.mp4
+clips/*.json
+frames/
+output/*.mp4
+output/*.png
+refs/*.png
+refs/*.jpg
+__pycache__/

@@ -1,0 +1,9 @@
+requests>=2.31
+pillow>=10
+numpy>=1.26
+# provider SDKs (필요한 것만 설치)
+google-genai>=1.0        # Veo 3.1
+runwayml>=3.0            # Runway Gen-4
+fal-client>=0.5          # fal.ai Kling
+replicate>=1.0           # Replicate
+anthropic>=0.40          # (선택) Claude 비전 일관성 리뷰

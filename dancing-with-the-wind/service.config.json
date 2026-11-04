@@ -1,0 +1,16 @@
+{
+  "name": "dancing-with-the-wind",
+  "type": "pipeline",
+  "description": "90초 시네마틱 뮤직비디오 '바람을 붙잡고 춤을 췄구나(Dancing With the Wind)' AI 영상 생성 + FFmpeg 편집 파이프라인",
+  "stack": {
+    "frontend": "none",
+    "backend": "python3 + ffmpeg"
+  },
+  "deploy": {
+    "platform": "none"
+  },
+  "build": {
+    "command": "python3 scripts/check_env.py",
+    "output_dir": "output"
+  }
+}

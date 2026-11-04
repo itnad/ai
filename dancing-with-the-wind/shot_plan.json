@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "title": "Dancing With the Wind (바람을 붙잡고 춤을 췄구나)",
+  "total_duration_s": 90.0,
+  "fps": 24,
+  "resolution": "1920x1080",
+  "notes": [
+    "duration_s = length of this shot in the final timeline. All 15 durations sum to exactly 90.0 s.",
+    "gen_duration_s = length requested from the generation API (8 s is the common maximum for Veo 3.1; Kling/Runway support 5 or 10). The clip is trimmed to duration_s (+ xfade overlap) in assemble.py.",
+    "xfade_out_s = cross-dissolve into the next shot. 0 = hard cut. Overlap is taken from the generated clip's spare length, so the timeline length is unaffected.",
+    "age_stage keys refer to character_bible.json protagonist.age_stages.",
+    "location keys refer to visual_bible.json locations.",
+    "chain_from_prev = true means generate.py can pass the previous clip's last frame as the start image (image-to-video) when the provider supports it, for continuity."
+  ],
+  "shots": [
+    {
+      "id": "S01", "act": "act1_street_and_sacrifice", "start_s": 0.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 0.0,
+      "age_stage": "A_20s", "location": "L1_seoul_alley", "characters": ["protagonist"],
+      "camera": "slow dolly-in from medium-wide to medium close-up, eye level",
+      "action": "The young man stands alone in the middle of the wet alley as a violent gust of wind sweeps dead leaves and loose papers around him. He slowly raises his right hand and closes his fist in the air as if trying to catch the wind itself, then opens it and looks at his empty palm.",
+      "mood": "longing, restless, the beginning",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S02", "act": "act1_street_and_sacrifice", "start_s": 6.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "A_20s", "location": "L2_kitchen", "characters": ["protagonist", "family"],
+      "camera": "locked-off medium shot from the doorway, slight low angle",
+      "action": "The young man stands in the kitchen doorway in his overcoat while his elderly mother, father and little sister sit at the table looking at him. He turns away and walks out. As he leaves, the entire kitchen scene behind him slowly freezes and crystallizes into a gilded golden relief sculpture, like an ornament cast in gold.",
+      "mood": "quiet sacrifice, guilt",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S03", "act": "act1_street_and_sacrifice", "start_s": 12.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "A_20s", "location": "L3_pojangmacha", "characters": ["protagonist", "friends"],
+      "camera": "slow lateral tracking shot, medium",
+      "action": "Three friends laugh and raise soju glasses under the swaying bulbs of the orange tent. The young man stands outside the tent in the wind, watches them for a moment, then turns and walks away into the dark. Behind him the laughing friends slowly turn into gold-leaf statues, the tent fabric hardening into gilded folds.",
+      "mood": "loneliness chosen",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S04", "act": "act1_street_and_sacrifice", "start_s": 18.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "B_30s", "location": "L4_mirror_room", "characters": ["protagonist"],
+      "camera": "close-up on the man's face reflected in the cracked mirror, slow push-in",
+      "action": "The man stares at his reflection in a cracked mirror while wind pushes the thin curtain. In the reflection his first grey streak appears at the left temple; a small walnut music box on the shelf beside him slowly turns to solid gold and sinks into the wall, which becomes a gilded surface embedded with photographs and letters.",
+      "mood": "youth traded for gold",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S05", "act": "act2_ascent", "start_s": 24.0, "duration_s": 7.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "B_30s", "location": "L5_golden_staircase", "characters": ["protagonist"],
+      "camera": "wide low-angle shot, slow crane up, the staircase vanishing into darkness above",
+      "action": "The man climbs an endless golden staircase through a black void, leaning into a strong headwind that whips his coat. Each step he passes is inlaid with gilded photographs, letters and music-box gears. Dark clouds drift past him. His stride is strong but the top is never visible.",
+      "mood": "relentless ambition",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S06", "act": "act2_ascent", "start_s": 31.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "C_40s", "location": "L5_golden_staircase", "characters": ["protagonist"],
+      "camera": "medium shot tracking alongside him, then tilting up to reveal massive golden palace gates opening above",
+      "action": "The same man, now visibly older with greying temples and a tired face, keeps climbing the golden staircase against the wind, breathing hard. Above him, enormous golden palace gates slowly swing open and a flood of warm gold light pours down over him.",
+      "mood": "exhausted arrival, years consumed",
+      "chain_from_prev": true
+    },
+    {
+      "id": "S07", "act": "act3_palace", "start_s": 37.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 0.5,
+      "age_stage": "D_50s", "location": "L6_golden_palace", "characters": ["protagonist", "the_crowd"],
+      "camera": "slow steadicam push following behind the man, then orbiting to his face",
+      "action": "The silver-haired man walks through the opened gates into the vast golden ballroom. Hundreds of masked guests in black formalwear part before him and applaud in perfect unison. Gold confetti and candle sparks drift in the wind through the hall. He lifts his chin, overwhelmed, almost smiling.",
+      "mood": "triumph, intoxication",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S08", "act": "act3_palace", "start_s": 43.0, "duration_s": 7.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "D_50s", "location": "L6_golden_palace", "characters": ["protagonist", "the_woman:ideal_form"],
+      "camera": "slow orbiting shot around the dancing couple, medium, warm flare",
+      "action": "The man dances a slow waltz with an impossibly beautiful woman in a champagne-gold gown whose long train lifts and floats in the wind. Her face is softly out of focus and serene. Two gloved hands from off-frame lower a thin polished gold crown onto his head as they turn. He closes his eyes in bliss.",
+      "mood": "the dream fulfilled",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S09", "act": "act4_uncanny_collapse", "start_s": 50.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 0.0,
+      "age_stage": "D_50s", "location": "L6_golden_palace", "characters": ["protagonist", "the_woman:uncanny_form", "the_crowd:uncanny_form"],
+      "camera": "the man's point of view slowly panning across the crowd, then a close-up two-shot of the woman's face",
+      "action": "Wearing the crown, the man looks around: the masked guests repeat the exact same clap and bow in a mechanical loop like animatronics, all with identical jerky timing. He turns to the woman: her skin has a porcelain sheen, her smile is fixed, her glassy eyes do not blink. The chandeliers flicker and the gold light turns a sickly brass color. His smile fades.",
+      "mood": "uncanny dread",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S10", "act": "act4_uncanny_collapse", "start_s": 56.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 0.5,
+      "age_stage": "D_50s", "location": "L6_golden_palace", "characters": ["protagonist"],
+      "camera": "wide shot of the man small against a towering golden wall, slow push toward the crack",
+      "action": "A deep crack splits the golden palace wall from floor to ceiling with a shower of gold dust. From inside the crack, lit by warm amber light, creased family photographs, folded handwritten letters, and shattered music-box pieces, gears and a tiny brass ballerina, spill out and tumble across the mirrored floor toward the man's feet in the wind.",
+      "mood": "the hidden cost revealed",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S11", "act": "act4_uncanny_collapse", "start_s": 62.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "D_50s", "location": "L6_golden_palace", "characters": ["protagonist"],
+      "camera": "extreme close-up on his hands then slow tilt up to his face, shallow focus",
+      "action": "The man kneels and picks up the tiny brass ballerina from the music box and a creased photograph of a family at a kitchen table. His weathered hands tremble. He looks up and his face shows the slow dawning realization that all of this was built from what he gave away; a single tear catches the brass light. Gold dust blows past him.",
+      "mood": "recognition, grief",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S12", "act": "act4_uncanny_collapse", "start_s": 68.0, "duration_s": 7.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "D_50s", "location": "L7_void", "characters": ["protagonist", "the_woman:ideal_form"],
+      "camera": "slow orbit around the dancing man, medium-wide, the camera gradually pulling back",
+      "action": "The man begins a last slow waltz with the woman, but as they turn she dissolves into drifting gold dust in his arms, and the golden palace behind them crumbles silently into the same gold dust and blows away, leaving only a black void. He keeps dancing alone, his arms holding the empty air in the shape of a partner, the crown slipping from his head.",
+      "mood": "the illusion ends",
+      "chain_from_prev": true
+    },
+    {
+      "id": "S13", "act": "act5_return", "start_s": 75.0, "duration_s": 5.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "E_70s", "location": "L7_void", "characters": ["protagonist"],
+      "camera": "static close-up, then slow tilt down to his hands",
+      "action": "The dance stops. The man, now an old man with white hair and a gaunt face, stands still in the dark void. He slowly lowers his arms and looks down at his two open empty hands, turning them over. Faint gold dust blows off his palms and vanishes.",
+      "mood": "emptiness",
+      "chain_from_prev": true
+    },
+    {
+      "id": "S14", "act": "act5_return", "start_s": 80.0, "duration_s": 6.0, "gen_duration_s": 8, "xfade_out_s": 1.0,
+      "age_stage": "E_70s", "location": "L1b_seoul_alley_ruined", "characters": ["protagonist"],
+      "camera": "wide static shot matching S01's framing, then slow push-in",
+      "action": "The old man stands in the same narrow alley where he began, but it is ruined: the streetlight is dead, the shops are demolished to rubble, the walls collapsed, no people, only wind blowing dust and dead leaves. He looks around slowly, recognizing the place and finding nothing left.",
+      "mood": "everything is gone",
+      "chain_from_prev": false
+    },
+    {
+      "id": "S15", "act": "act5_return", "start_s": 86.0, "duration_s": 4.0, "gen_duration_s": 8, "xfade_out_s": 0.0,
+      "age_stage": "E_70s", "location": "L1b_seoul_alley_ruined", "characters": ["protagonist"],
+      "camera": "locked-off wide shot from behind, the man walking away from camera into darkness",
+      "action": "The old man turns his back to the camera and walks slowly, empty-handed, down the dark ruined road, his threadbare coat flapping in the wind, growing smaller until the darkness swallows him. Fade to black.",
+      "mood": "acceptance, end",
+      "chain_from_prev": true
+    }
+  ]
+}
