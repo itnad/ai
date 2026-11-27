@@ -47,7 +47,9 @@ export async function GET(request) {
   const usage = describeByEmployee(await getRecords(monthRange(ym)));
   const m = Number(ym.slice(5));
   return csv(`휴가현황_${ym}.csv`,
-    ['이름', '부서', '전화번호', `${m}월 사용 내역`, `${m}월 연차`, `${m}월 기타휴가`, `${year}년 연차 누적`, `${year}년 기타휴가 누적`, '입력 완료', '완료 일시'],
-    rows.map((s) => [s.name, s.department, formatPhone(s.phone), usage.get(s.id) ?? '', s.used_month, s.other_month,
-      s.used_year, s.other_year, s.confirmed_at ? 'O' : 'X', formatDateTimeKo(s.confirmed_at)]));
+    ['이름', '부서', '전화번호', `${m}월 등록 건수`, `${m}월 사용 내역`, `${m}월 연차`, `${m}월 기타휴가`,
+      `${year}년 등록 건수`, `${year}년 연차 누적`, `${year}년 기타휴가 누적`, '최근 입력·수정', '최근 입력자', '입력 완료', '완료 일시'],
+    rows.map((s) => [s.name, s.department, formatPhone(s.phone), s.month_count, usage.get(s.id) ?? '', s.used_month, s.other_month,
+      s.year_count, s.used_year, s.other_year, formatDateTimeKo(s.last_entry_at),
+      s.last_entry_at ? (s.last_entry_by === 'admin' ? '관리자' : '본인') : '', s.confirmed_at ? 'O' : 'X', formatDateTimeKo(s.confirmed_at)]));
 }

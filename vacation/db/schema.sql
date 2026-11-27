@@ -39,3 +39,12 @@ create table if not exists holidays (
   date date primary key,
   name text not null
 );
+
+-- 2026-11-27 추가: 직원별 마지막 휴가 입력·삭제 시각과 입력자('self' 또는 'admin')
+alter table employees add column if not exists last_entry_at timestamptz;
+alter table employees add column if not exists last_entry_by text;
+update employees e
+   set last_entry_at = r.max_at, last_entry_by = r.by
+  from (select distinct on (employee_id) employee_id, created_at as max_at, created_by as by
+          from leave_records order by employee_id, created_at desc) r
+ where e.id = r.employee_id and e.last_entry_at is null;

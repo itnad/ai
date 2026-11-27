@@ -10,11 +10,15 @@ export async function getHolidaySet(start, end, q = query) {
 /**
  * 직원별 사용 집계. year 의 누적 사용, ym 의 월간 사용, 월말 확인 여부를 돌려줍니다.
  * planned_year 는 올해 누적 중 오늘 이후로 등록된(예정) 연차 일수입니다.
+ * month_count, year_count 는 휴가 등록 건수입니다. 달을 넘기는 휴가는 달별 기록으로 나뉘지만
+ * 한 번의 등록은 같은 트랜잭션에서 저장돼 created_at 이 같으므로, created_at 으로 묶어 1건으로 셉니다.
  * employeeId 를 주면 그 직원 한 명만, 아니면 재직 중인 전 직원.
  */
 export async function getSummaries({ year, ym, employeeId = null }) {
   return query(
-    `select e.id, e.name, e.department, e.phone,
+    `select e.id, e.name, e.department, e.phone, e.last_entry_at, e.last_entry_by,
+            count(distinct r.created_at)::int as year_count,
+            count(distinct r.created_at) filter (where to_char(r.start_date, 'YYYY-MM') = $2)::int as month_count,
             coalesce(sum(r.days) filter (where r.type = any($3)), 0) as used_year,
             coalesce(sum(r.days) filter (where r.type = any($3) and r.start_date > $5::date), 0) as planned_year,
             coalesce(sum(r.days) filter (where r.type <> all($3)), 0) as other_year,
@@ -54,6 +58,11 @@ export async function getRecords({ employeeId = null, start, end }) {
       order by r.start_date, e.department, e.name, r.id`,
     [start, end, employeeId],
   );
+}
+
+// 휴가 기록을 추가하거나 지울 때 직원의 최근 입력 시각을 갱신합니다.
+async function touchEmployee(q, employeeId, asAdmin) {
+  await q('update employees set last_entry_at = now(), last_entry_by = $2 where id = $1', [employeeId, asAdmin ? 'admin' : 'self']);
 }
 
 export async function isConfirmed(employeeId, ym) {
@@ -106,6 +115,7 @@ export async function addLeave({ employeeId, type, start, end, memo = '', asAdmi
         [employeeId, type, p.start, p.end, p.days, cleanMemo, asAdmin ? 'admin' : 'self'],
       );
     }
+    await touchEmployee(tx.query, employeeId, asAdmin);
     const days = plan.pieces.reduce((s, p) => s + p.days, 0);
     return { ok: true, days, ym: first.slice(0, 7) };
   });
@@ -117,7 +127,10 @@ export async function deleteLeave({ recordId, employeeId = null, asAdmin = false
   if (!asAdmin && (await isConfirmed(rec.employee_id, rec.start_date.slice(0, 7)))) {
     return { error: '이미 입력 완료한 달의 기록은 삭제할 수 없어요. 관리자에게 확인 취소를 요청해 주세요.' };
   }
-  await query('delete from leave_records where id = $1', [recordId]);
+  await transaction(async (tx) => {
+    await tx.query('delete from leave_records where id = $1', [recordId]);
+    await touchEmployee(tx.query, rec.employee_id, asAdmin);
+  });
   return { ok: true, ym: rec.start_date.slice(0, 7) };
 }
 

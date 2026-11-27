@@ -12,6 +12,8 @@
 - 같은 날짜 중복 등록 불가. 단, 같은 날 오전 반차 + 오후 반차는 허용.
 - 직원이 월말에 "입력 완료"를 누르면 그 달은 직원이 수정할 수 없다. 관리자가 취소하면 다시 수정 가능.
 - 관리자는 잠긴 달에도 대리 등록/삭제 가능.
+- 휴가 등록 건수는 기록 행 수가 아니라 등록 횟수. 달을 넘긴 휴가는 같은 트랜잭션(같은 created_at)으로 저장되므로 `count(distinct created_at)` 으로 1건으로 센다.
+- 휴가 기록을 추가·삭제할 때마다 `employees.last_entry_at`, `last_entry_by` 를 갱신한다 (`touchEmployee`).
 
 ## 기술 스택
 - Next.js 16 App Router + Server Actions (JavaScript, TypeScript 미사용)

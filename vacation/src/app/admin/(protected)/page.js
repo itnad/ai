@@ -2,13 +2,25 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { requireAdmin, formatPhone } from '@/lib/auth';
 import { getSummaries, getRecords, describeByEmployee } from '@/lib/data';
-import { currentYm, isValidYm, monthRange, formatYmKo, formatDateTimeKo } from '@/lib/dates';
+import { currentYm, isValidYm, monthRange, formatYmKo, formatDateTimeKo, todayKST } from '@/lib/dates';
+
+const todayKSTOf = (value) => todayKST(new Date(value));
 import { fmtDays } from '@/lib/url';
 import Flash from '@/components/Flash';
 import MonthNav from '@/components/MonthNav';
 import CopyButton from '@/components/CopyButton';
 import ConfirmButton from '@/components/ConfirmButton';
 import { unconfirmAction } from '../actions';
+
+function daysText(used, other) {
+  const parts = [`연차 ${fmtDays(used)}일`];
+  if (other) parts.push(`기타 ${fmtDays(other)}일`);
+  return parts.join(' · ');
+}
+
+function isThisMonth(value, ym) {
+  return todayKSTOf(value).slice(0, 7) === ym;
+}
 
 async function siteUrl() {
   const h = await headers();
@@ -24,29 +36,42 @@ export default async function AdminOverview({ searchParams }) {
   const ym = isValidYm(sp.ym) ? sp.ym : nowYm;
   const year = Number(ym.slice(0, 4));
   const pendingOnly = sp.f === 'pending';
+  const byRecent = sp.sort === 'recent';
 
   const all = await getSummaries({ year, ym });
   const usage = describeByEmployee(await getRecords(monthRange(ym)));
   const confirmed = all.filter((s) => s.confirmed_at);
   const pending = all.filter((s) => !s.confirmed_at);
-  const rows = pendingOnly ? pending : all;
+  const filtered = pendingOnly ? pending : all;
+  const rows = byRecent
+    ? [...filtered].sort((x, y) => (y.last_entry_at ? new Date(y.last_entry_at) : 0) - (x.last_entry_at ? new Date(x.last_entry_at) : 0))
+    : filtered;
+  const monthCount = all.reduce((sum, s) => sum + s.month_count, 0);
   const totalUsed = all.reduce((sum, s) => sum + s.used_month, 0);
   const canConfirm = ym <= nowYm;
 
   const url = await siteUrl();
   const reminder = `[휴가 기록 안내]\n${formatYmKo(ym)} 휴가 사용 내역을 입력하고 '입력 완료'를 눌러 주세요.\n사용한 휴가가 없어도 입력 완료는 꼭 눌러 주세요.\n👉 ${url}`;
   const pendingNames = pending.map((s) => s.name).join(', ');
-  const back = `/admin?ym=${ym}${pendingOnly ? '&f=pending' : ''}`;
+  const qs = (over = {}) => {
+    const p = new URLSearchParams({ ym });
+    const f = 'f' in over ? over.f : pendingOnly ? 'pending' : '';
+    const sort = 'sort' in over ? over.sort : byRecent ? 'recent' : '';
+    if (f) p.set('f', f);
+    if (sort) p.set('sort', sort);
+    return `/admin?${p.toString()}`;
+  };
+  const back = qs();
 
   return (
     <>
       <Flash searchParams={sp} />
-      <MonthNav ym={ym} basePath="/admin" extra={pendingOnly ? '&f=pending' : ''} />
+      <MonthNav ym={ym} basePath="/admin" extra={qs().replace(`/admin?ym=${ym}`, '')} />
 
       <div className="stats">
         <div className="stat"><div className="label">재직 인원</div><div className="value">{all.length}<small>명</small></div></div>
         <div className="stat accent"><div className="label">입력 완료</div><div className="value">{confirmed.length}<small>명</small></div></div>
-        <div className="stat"><div className="label">이번 달 연차 사용</div><div className="value">{fmtDays(totalUsed)}<small>일</small></div></div>
+        <div className="stat"><div className="label">{Number(ym.slice(5))}월 휴가 등록</div><div className="value">{monthCount}<small>건</small></div><div className="small muted">연차 {fmtDays(totalUsed)}일</div></div>
       </div>
 
       {canConfirm && (
@@ -66,8 +91,11 @@ export default async function AdminOverview({ searchParams }) {
 
       <div className="spread">
         <div className="row">
-          <Link href={`/admin?ym=${ym}`} className={`btn small ${pendingOnly ? 'secondary' : ''}`}>전체</Link>
-          <Link href={`/admin?ym=${ym}&f=pending`} className={`btn small ${pendingOnly ? '' : 'secondary'}`}>미입력만</Link>
+          <Link href={qs({ f: '' })} className={`btn small ${pendingOnly ? 'secondary' : ''}`}>전체</Link>
+          <Link href={qs({ f: 'pending' })} className={`btn small ${pendingOnly ? '' : 'secondary'}`}>미입력만</Link>
+          <span className="muted small" style={{ marginLeft: 8 }}>정렬</span>
+          <Link href={qs({ sort: '' })} className={`btn small ${byRecent ? 'secondary' : ''}`}>부서·이름</Link>
+          <Link href={qs({ sort: 'recent' })} className={`btn small ${byRecent ? '' : 'secondary'}`}>최근 입력순</Link>
         </div>
         <div className="row">
           <a className="btn secondary small" href={`/admin/export?kind=summary&ym=${ym}`}>월 현황 엑셀</a>
@@ -82,17 +110,16 @@ export default async function AdminOverview({ searchParams }) {
             <tr>
               <th>이름</th>
               <th className="hide-sm">부서</th>
-              <th>{Number(ym.slice(5))}월 사용 내역</th>
-              <th className="num">{Number(ym.slice(5))}월 연차</th>
-              <th className="num hide-sm">{Number(ym.slice(5))}월 기타</th>
-              <th className="num">{year}년 연차 누적</th>
-              <th className="num hide-sm">{year}년 기타 누적</th>
-              <th>입력</th>
+              <th className="num">{Number(ym.slice(5))}월 등록</th>
+              <th className="hide-sm">{Number(ym.slice(5))}월 사용 내역</th>
+              <th className="num">{year}년 등록</th>
+              <th>최근 입력·수정</th>
+              <th>입력 완료</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="empty">{all.length === 0 ? '등록된 직원이 없어요. 직원 메뉴에서 등록해 주세요.' : '해당하는 직원이 없어요.'}</td></tr>
+              <tr><td colSpan={7} className="empty">{all.length === 0 ? '등록된 직원이 없어요. 직원 메뉴에서 등록해 주세요.' : '해당하는 직원이 없어요.'}</td></tr>
             )}
             {rows.map((s) => (
               <tr key={s.id}>
@@ -101,20 +128,41 @@ export default async function AdminOverview({ searchParams }) {
                   <div className="small muted hide-sm">{formatPhone(s.phone)}</div>
                 </td>
                 <td className="hide-sm nowrap">{s.department}</td>
-                <td className="small">{usage.get(s.id) ?? <span className="muted">-</span>}</td>
-                <td className="num">{s.used_month ? fmtDays(s.used_month) : '-'}</td>
-                <td className="num hide-sm">{s.other_month ? fmtDays(s.other_month) : '-'}</td>
-                <td className="num"><strong>{fmtDays(s.used_year)}</strong></td>
-                <td className="num hide-sm">{s.other_year ? fmtDays(s.other_year) : '-'}</td>
+                <td className="num nowrap">
+                  {s.month_count ? (
+                    <>
+                      <strong>{s.month_count}건</strong>
+                      <div className="small">{daysText(s.used_month, s.other_month)}</div>
+                    </>
+                  ) : <span className="muted">-</span>}
+                </td>
+                <td className="small hide-sm">{usage.get(s.id) ?? <span className="muted">-</span>}</td>
+                <td className="num nowrap">
+                  {s.year_count ? (
+                    <>
+                      <strong>{s.year_count}건</strong>
+                      <div className="small">{daysText(s.used_year, s.other_year)}</div>
+                    </>
+                  ) : <span className="muted">-</span>}
+                </td>
+                <td className="nowrap">
+                  {s.last_entry_at ? (
+                    <>
+                      <span className={isThisMonth(s.last_entry_at, nowYm) ? '' : 'muted'}>{formatDateTimeKo(s.last_entry_at)}</span>
+                      <div className="small muted">{s.last_entry_by === 'admin' ? '관리자 입력' : '본인 입력'}</div>
+                    </>
+                  ) : <span className="muted">입력 없음</span>}
+                </td>
                 <td className="nowrap">
                   {s.confirmed_at ? (
-                    <form action={unconfirmAction} className="row" style={{ gap: 4 }}>
-                      <span className="badge ok" title={formatDateTimeKo(s.confirmed_at)}>완료</span>
+                    <form action={unconfirmAction}>
+                      <span className="badge ok">완료</span>
                       <input type="hidden" name="employeeId" value={s.id} />
                       <input type="hidden" name="name" value={s.name} />
                       <input type="hidden" name="ym" value={ym} />
                       <input type="hidden" name="back" value={back} />
                       <ConfirmButton className="ghost small" message={`${s.name}님의 ${formatYmKo(ym)} 입력 완료를 취소할까요?\n직원이 다시 수정할 수 있게 됩니다.`}>취소</ConfirmButton>
+                      <div className="small muted">{formatDateTimeKo(s.confirmed_at)}</div>
                     </form>
                   ) : canConfirm ? (
                     <span className="badge warn">미입력</span>
@@ -127,7 +175,10 @@ export default async function AdminOverview({ searchParams }) {
           </tbody>
         </table>
       </div>
-      <p className="small muted" style={{ margin: 0 }}>연차는 반차를 포함하고, 오늘 이후로 등록된 예정 휴가도 누적에 들어갑니다. 병가·경조사·기타는 기타로 따로 셉니다.</p>
+      <p className="small muted" style={{ margin: 0 }}>
+        건수는 직원이 휴가를 등록한 횟수이고, 일수의 연차는 반차를 포함합니다. 오늘 이후로 등록된 예정 휴가도 들어갑니다.
+        병가·경조사·기타는 기타로 따로 셉니다. 최근 입력·수정은 휴가를 등록하거나 삭제한 마지막 시각이며, 이번 달이 아니면 흐리게 표시됩니다.
+      </p>
     </>
   );
 }
