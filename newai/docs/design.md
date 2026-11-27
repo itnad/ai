@@ -1,0 +1,214 @@
+# newai 설계
+
+작성일: 2026-11-27 · 버전: 0.1(구현 전) · 근거: `requirements.md`, `feasibility.md`
+
+## 1. 기술 선택
+
+| 항목 | 선택 | 이유 |
+|---|---|---|
+| 언어·런타임 | TypeScript, Node.js 22 LTS, ESM | Agent SDK의 1급 언어. Playwright·터미널·웹을 한 런타임으로. Windows 설치가 쉽다 |
+| Claude 연결 | `@anthropic-ai/claude-agent-sdk`, 기본 인증은 로그인된 Claude Code(설정으로 API 키 전환) | `canUseTool`, 훅, `resume`, `maxBudgetUsd`, 사용량 조회를 모두 제공(실측 확인) |
+| 저장소 | SQLite (`node:sqlite`, 실패 시 `better-sqlite3`) | 파일 하나, 트랜잭션, 재시작 후 유지. WAL 모드 |
+| 서버 | `node:http` + `ws`(WebSocket) | 의존성 최소. REST + 실시간 이벤트 |
+| 웹 화면 | Preact + Vite 빌드 결과를 서버가 정적 제공 | 가볍고 키보드 조작 구현이 쉽다. 외부 CDN 없이 동작 |
+| 설정 형식 | YAML (`yaml`), 검증은 `zod` | 사람이 고치기 쉽다. 잘못된 값은 시작 시 한국어 오류 |
+| 스케줄 | `croner` | cron 식, 시간대 지원 |
+| 웹 확인 | Playwright (Chromium) | 가려진 요소 클릭 오류를 기본 제공(실측 확인) |
+| 알림 | Windows 토스트(PowerShell), macOS `osascript`, Linux `notify-send` | 추가 네이티브 모듈 없이 |
+| 터미널 시험 | `node-pty`(개발 의존성만) | 가짜 TTY로 화면 출력 확인 |
+
+## 2. 전체 구조
+
+```
+ 사용자
+  │  newai(터미널)      브라우저(대시보드·대화)     Telegram/Slack
+  │      │                   │                       │ (바깥으로만 접속)
+  ▼      ▼                   ▼                       ▼
+ ┌──────────────────── newai 서버 (127.0.0.1, 백그라운드) ────────────────────┐
+ │  API(REST) ─ 이벤트 버스(WebSocket) ─ 인증(로컬 토큰·Origin)                 │
+ │                                                                            │
+ │  작업 큐·스케줄러 ──► 러너 ──► Agent SDK 세션(프로젝트 폴더/worktree)        │
+ │        │               │  ├ canUseTool ──► 결정 엔진 ──► 판단 모델(중립 폴더) │
+ │        │               │  ├ PreToolUse 훅 ──► 안전장치(policy.yaml)          │
+ │        │               │  └ 결과 ──► 완료 검사 ──► 보완 지시/결정 카드        │
+ │        │               └ 중단 분류 ──► 이어가기 계획(대기 후 resume)          │
+ │  파이프라인 엔진(pipelines/*.yaml) ─ 릴리스(push·PR, 사람 버튼)              │
+ │  서버 검토(servers.yaml) ─ 알림 ─ 보고서 ─ 규칙 저장소                       │
+ │  코드 버전 감시 ──► 작업 없을 때 스스로 재시작                               │
+ │  SQLite(NEWAI_HOME/newai.db)                                               │
+ └────────────────────────────────────────────────────────────────────────────┘
+  ▲
+  │ 브리지 훅(harness hook) ── 평소 쓰는 대화형 Claude Code 세션
+```
+
+- 서버가 모든 상태를 가진다. 터미널·웹·원격은 얇은 클라이언트다. 그래서 창을 닫아도 대화·큐·카드가 남는다.
+- 터미널 화면과 웹 화면은 같은 API와 같은 이벤트를 쓴다. 기능 차이를 두지 않는다.
+
+## 3. 폴더 분리 (N4)
+
+| 변수 | 결정 방법 | 내용 |
+|---|---|---|
+| `INSTALL_DIR` | 실행 중인 코드 파일 위치(`import.meta.url`)에서 한 번 계산 | 코드, 기본 정책 템플릿, 웹 빌드 결과 |
+| `NEWAI_HOME` | 환경 변수 `NEWAI_HOME`, 없으면 Windows `%APPDATA%\newai`, 그 외 `~/.newai` | `config.yaml`, `policy.yaml`, `pipelines/`, `servers.yaml`, `newai.db`, `logs/`, `_projects/`, `worktrees/`, `judge-sandbox/`, `secrets.yaml` |
+
+- 두 값은 `src/core/paths.ts` 한 곳에서만 만든다. 다른 모듈은 이 값을 받아 쓴다.
+- 시험용 하네스는 `NEWAI_HOME`과 포트만 바꿔 띄운다. 실제 설정을 건드리지 않는다.
+
+## 4. 경로 정규화 (N3)
+
+`normPath(p)` 한 함수만 경로 비교에 쓴다.
+1. `path.resolve`로 절대 경로화, 존재하면 `realpath`.
+2. 역슬래시를 슬래시로.
+3. Windows면 드라이브 문자와 전체를 소문자로(대소문자 무시 파일 시스템).
+4. 끝의 슬래시 제거(루트 제외).
+
+`isInside(child, parent)`는 둘 다 `normPath` 후 접두사 + 구분자로 판정한다. 린트 규칙으로 다른 곳의 `startsWith` 경로 비교를 금지한다.
+
+## 5. 결정 엔진
+
+### 5.1 흐름
+```
+ 질문 발생(AskUserQuestion / ExitPlanMode / 권한 / 보고 끝 글 질문 / 시작 전 질문)
+   → 정책 판정: allow(즉시 허용) | wait(대기 필수) | human(사람만) | deny(거부)
+   → allow·deny면 카드 없이 기록만
+   → 그 외: 판단 모델이 추천안 3개 점수화 → 카드 생성 → 알림
+   → 사람 응답 또는 마감
+       마감 시: 골라 둔 답 > 자동 선택 가능한 1순위 > (없으면) 계속 대기
+   → SDK에 답 전달 → 기록
+```
+
+### 5.2 판단 모델 (N6)
+- 별도 SDK 호출. `cwd = NEWAI_HOME/judge-sandbox/`(빈 폴더), `settingSources: []`, `tools: []`, `maxTurns: 1`, 메모리 끔(`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`).
+- 입력은 하네스가 직접 만든다: 질문, 선택지, 프로젝트 요약, 해당 프로젝트 규칙 + 승인된 전역 규칙, 환경 감지 결과, 언어 설정.
+- 출력은 JSON 스키마로 강제하고 `zod`로 검증. 실패하면 1번 재시도, 그래도 실패하면 규칙 기반 점수(원래 선택지 순서 + 위험도)로 대체.
+- 기본 모델은 비용이 낮은 모델(설정 가능). 가짜 판단 모델(`FakeScorer`)로 단위 시험.
+
+### 5.3 가점 기준 (설정 `config.yaml`의 `scoring.weights`)
+
+| 기준 | 기본 가중치 | 설명 |
+|---|---|---|
+| 목표 부합 | 30 | 사용자 요청과 인수 기준에 맞는가 |
+| 되돌리기 쉬움 | 20 | 실패 시 쉽게 되돌릴 수 있는가 |
+| 범위 준수 | 15 | 요청 범위를 넘는 기능을 만들지 않는가 |
+| 환경 적합 | 15 | 설치된 언어·도구로 바로 되는가 |
+| 규칙 부합 | 10 | 프로젝트 규칙·사용자 지적과 맞는가 |
+| 비용·시간 | 10 | 빠르고 싸게 끝나는가 |
+
+각 추천안은 기준별 0~10점 → 가중합 0~100점. 정책상 자동 선택 불가(push, 배포, 고위험)인 안은 점수와 무관하게 `autoSelectable=false`.
+
+### 5.4 타이머
+- 카드 마감 = 생성 시각 + 전역 대기 시간 − 멈춘 시간 합. 대기 시간을 바꾸면 떠 있는 카드의 마감도 다시 계산(F1.5).
+- 서버 시계 기준. 클라이언트는 남은 초만 표시.
+- 서버 재시작 시 DB에서 카드 복원, 마감이 지났으면 즉시 처리.
+
+### 5.5 답 전달 방식
+- 기본: `canUseTool` 콜백이 카드가 풀릴 때까지 Promise로 기다린다(70초·21분 보류 실측 통과).
+- 대안: 콜백은 즉시 `deny(interrupt)`로 세션을 멈추고, 카드가 풀리면 같은 세션을 `resume`해 답을 사용자 메시지로 보낸다. 서버 재시작으로 콜백이 사라진 경우에도 이 경로를 쓴다.
+
+## 6. 안전장치 (자세한 규칙은 `security-policy.md`)
+
+여러 겹이 서로 독립적으로 동작한다. 한 겹이 뚫려도 다음 겹이 막는다.
+
+1. **선택지 필터**: push·배포·고위험 선택지는 자동 선택 제외.
+2. **PreToolUse 훅**: Bash 명령, 파일 경로, 웹 요청을 `policy.yaml` 규칙으로 판정.
+3. **git 환경 변수**: 에이전트 프로세스에 `GIT_CONFIG_COUNT`로 `url.newai-blocked://.pushInsteadOf`를 여러 접두사에 걸고, PATH 앞에 `git-remote-newai-blocked` 안내 스크립트를 둔다(실측: push만 막히고 fetch는 정상).
+4. **경로 감시**: 작업 폴더 밖 쓰기는 wait, 설치 폴더·데이터 폴더의 정책·코드는 human.
+5. **자격 증명 분리**: 에이전트 환경에서 `GH_TOKEN`, `GITHUB_TOKEN` 등을 지우고 `GIT_TERMINAL_PROMPT=0`. push 자격은 릴리스 단계의 하네스 프로세스에만.
+6. **권한 모드**: SDK `permissionMode: 'default'`로 두어 모든 위험 도구가 `canUseTool`을 거치게 한다. `bypassPermissions`는 쓰지 않는다.
+
+## 7. 러너
+
+### 7.1 실행
+- 작업 하나 = SDK 세션 하나(이어가기 포함). 옵션: `cwd`(프로젝트 또는 worktree), `resume`, `model`, `maxBudgetUsd`(1회분), `settingSources: ['project']`(프로젝트 CLAUDE.md만), `env`(git 차단 변수, 토큰 제거), `hooks`, `canUseTool`, `appendSystemPrompt`(언어, 질문 도구 사용 지시, 이전 작업 기록, 규칙, 환경).
+- 모든 SDK 메시지를 이벤트로 DB에 쌓고 버스로 보낸다.
+- 비용: 세션별 마지막 `total_cost_usd`를 저장하고 새 값과의 차이만 작업 비용에 더한다(N5).
+
+### 7.2 완료 검사 (F4.3)
+결과가 나오면 검사기가 본다.
+- 한국어 비율(언어 설정이 한국어일 때만), 실행 방법 문단, 실제 실행 증거(실행한 명령·check-web 결과), 보류 항목 문단.
+- 판단은 규칙 + 판단 모델 보조. 부족하면 같은 세션에 보완 지시. 최대 2번, 그 후에는 보고서에 "보완 미완" 표시.
+
+### 7.3 보고 끝 글 질문 (F4.4)
+마지막 문단이 질문(물음표, "할까요", "원하시면")이면 판단 모델이 선택지 2~3개로 바꿔 결정 카드를 만든다. 답이 정해지면 같은 세션에 그 답을 보내 이어 간다. 최대 연속 횟수는 설정(기본 3).
+
+### 7.4 중단 분류와 이어가기 (F9.1)
+
+| 원인 | 판별 | 대기 | 상한(기본) |
+|---|---|---|---|
+| 시간 한도 | 하네스의 작업당 벽시계 한도 초과 → `interrupt` | 즉시(다음 큐 순서) | 3회 |
+| 비용 한도 | 결과 `error_max_budget_usd` | 일일 상한 안이면 즉시 새 1회분, 넘으면 다음 날 0시 | 일일 상한 |
+| 서버 재시작 | 시작 시 `running` 상태 작업 발견 | 서버 기동 30초 후 | 3회 |
+| 사용량 한도 | 오류 유형 `rate_limit`, 문구 "limit reached", `get_usage`의 `resets_at` | 재설정 시각 + 2분 | 하루 6회 |
+| 네트워크 | API 재시도 소진, 연결 오류 | 30초부터 2배씩 최대 10분 | 6회, 누적 2시간 |
+
+- 이어갈 때 `resume: sessionId` + "중단 원인과 이어서 할 일" 메시지.
+- 상한을 넘으면 `failed`가 아니라 `needs_human` 상태로 두고 알림. 모든 중단과 대기는 보고서의 "중단과 이어가기" 표에 남는다.
+- 사용량 한도 대기 중 시험이 막히면 시험용 하네스만 작업 모델을 Sonnet으로 바꾼다(실제 설정은 그대로).
+
+## 8. 작업 큐와 스케줄
+- 상태: `queued → running → (waiting_decision) → (suspended: 이어가기 대기) → done | needs_human | failed | cancelled`.
+- 동시 실행 상한(기본 2). 같은 프로젝트의 쓰기 작업은 worktree가 없으면 직렬.
+- 예약 요청(F3.5)은 `queued` 행으로 DB에 즉시 저장. `after_job_id`로 "현재 작업 끝나면" 표현.
+- cron 배치는 `schedules` 표. 서버 검토, 정기 보고, 사용자 정의 요청.
+
+## 9. 파이프라인
+- `pipelines/default.yaml`에 단계 목록. 각 단계: 이름, 모델, 프롬프트 템플릿, 입력 문서, 출력 문서, 다음 단계 조건.
+- 단계마다 새 세션. 이전 단계 문서 경로만 넘긴다(대화 맥락은 넘기지 않음).
+- 단계 시작 전 출력 문서의 해시·수정 시각을 기록, 끝나고 바뀌지 않았으면 같은 세션에 "문서를 쓰지 않았다" 보완 지시 1번, 그래도 없으면 실패.
+- 검증 단계 출력에서 `^판정:\s*(통과|실패)` 줄을 인수 기준별로 하네스가 직접 센다. 하나라도 실패면 수정 단계 → 재검증(최대 2회).
+
+## 10. 프로젝트와 worktree
+- 새 프로젝트: `NEWAI_HOME/_projects/<이름>/`에 `git init`, 커밋 기본 안 함(`/commit`으로 켬).
+- 기존 커밋이 있는 저장소: 작업마다 `NEWAI_HOME/worktrees/<프로젝트>-<작업ID>`에 `newai/<작업ID>` 브랜치로 worktree 생성. 끝난 뒤 릴리스 단계에서 검토.
+
+## 11. 릴리스 (F9.3)
+- 대시보드 "릴리스" 화면: 작업 브랜치 diff, 결정 기록, 검증 판정, 보류 항목.
+- "push" 버튼과 "PR 생성" 버튼은 각각 확인 대화상자를 거친다.
+- 실행 주체는 하네스 서버 프로세스. git 차단 변수를 빼고 사용자 자격 증명으로 `git push`, `gh pr create`. 에이전트 세션에는 이 권한이 없다.
+
+## 12. 서버 검토 (F9.4)
+- `servers.yaml`: 이름, 주소, 헬스 체크(HTTP 상태·본문 포함 문자열·응답 시간 상한), 로그 명령.
+- 작업 유형 `server-check`: 헬스 체크는 하네스가 직접 수행, 로그는 등록된 명령만 실행(외부 통신이라 정책상 wait, 단 사용자가 등록한 명령은 `servers.yaml`에서 허용 표시 가능).
+- 이상 시 읽기 전용 에이전트 세션으로 로그 분석(쓰기 도구 없음) → 보고서 + 알림.
+
+## 13. 맥락과 학습
+- 프로젝트 기록: 작업마다 요청, 결과 요약, 보류 항목을 `project_history`에 저장. 새 세션 시작 시 최근 N개(기본 5) 요약과 "답 없이 취소된 요청"을 시스템 프롬프트에 붙인다.
+- 규칙: 사용자 메시지에서 지적 표현을 감지하거나 `/rules add`로 추가. 자동 저장 범위는 그 프로젝트. 전역 승격은 `human` 결정 카드로만.
+
+## 14. 서버 생명주기
+- 시작: `newai` 또는 `harness serve`가 서버 상태 확인(`/api/health`) → 없으면 분리된 프로세스로 띄우고 준비될 때까지 대기.
+- 포트: `config.yaml`의 고정 포트(기본 47321). 포트 파일은 보조 수단이며 임시 파일에 쓰고 rename(원자적), 읽기는 EBUSY/EPERM 시 50ms부터 최대 2초 재시도.
+- 코드 버전: 시작 시 `INSTALL_DIR`의 코드 파일 해시(또는 `git rev-parse HEAD` + 변경분 해시)를 계산. 10초마다 다시 계산해 바뀌면 "재시작 대기"로 표시하고, 실행 중 작업이 없을 때 새 서버를 띄운 뒤 자신은 종료.
+- 클라이언트는 모든 요청에 `X-Newai-Client-Version`을 보내고, 응답의 `X-Newai-Server-Version`과 디스크 코드 버전을 비교해 다르면 경고하고 재시작을 요청한다(N2).
+
+## 15. 화면
+
+### 15.1 터미널 `newai`
+- 위쪽: 대화 기록과 진행 로그(스크롤). 아래쪽 고정 영역: 상태 줄 + 결정 카드.
+- 그리기: 한 프레임 전체를 문자열로 만든 뒤 커서 이동 + 줄 단위 덮어쓰기(남는 칸은 공백으로 채움)를 **한 번의 write**로. 지우고 다시 쓰지 않는다.
+- 입력: raw 모드에서 바이트를 직접 해석(`ESC [ A`, `ESC O A`, Windows 변형 포함). 대체 키: `j/k`, `1/2/3`, `Tab`, `Ctrl+P/N`. `harness keytest`는 누른 키의 바이트를 16진수로 보여 준다.
+
+### 15.2 웹 화면
+- `/` 대화 화면: 터미널과 같은 구성. 하단 결정 카드는 ↑↓/1~3/Enter/Space(멈춤)/p(골라 두기)/i(직접 입력)로 조작.
+- `/dashboard`: 작업 목록·상세, 결정 기록, 규칙, 일정, 서버 검토, 릴리스, 설정(대기 시간).
+
+## 16. 알림과 원격 응답
+- 데스크톱: 결정 필요, 작업 종료, 서버 검토 이상.
+- Telegram: 봇 토큰과 허용 chat ID를 `secrets.yaml`에. long polling(`getUpdates`)이라 들어오는 포트가 필요 없다. 카드마다 인라인 버튼 3개 + 멈춤. `callback_data`에는 카드 ID와 1회용 짧은 서명.
+- Slack: Socket Mode(앱 토큰)로 같은 기능. 둘 중 설정된 것만 켠다.
+
+## 17. 브리지 (F9.5)
+- `harness bridge install`: 사용자 전역 Claude Code 설정(`~/.claude/settings.json`)에 넣을 내용을 diff로 보여 주고 **확인을 받은 뒤에만** 백업을 만들고 추가한다. 넣는 항목:
+  - PreToolUse(matcher `AskUserQuestion|ExitPlanMode`) → `harness hook`, `timeout: 1800`.
+  - PermissionRequest → `harness hook`.
+- `harness hook`은 표준 입력 JSON을 서버로 보내고 카드가 풀릴 때까지 기다린 뒤 결과 JSON을 출력한다. 서버가 없거나 응답이 없으면 아무것도 출력하지 않고 0으로 끝나 원래 Claude Code 동작으로 돌아간다.
+- `harness bridge uninstall`: 표식이 있는 항목만 지운다(확인 후).
+
+## 18. 자동 실행 (F9.8)
+- Windows: `schtasks /Create /TN newai /SC ONLOGON /RL LIMITED /TR "<node> <INSTALL_DIR>\dist\cli.js serve"`. 해제는 `/Delete`. 등록 전 확인.
+- Linux: systemd 사용자 서비스, macOS: launchd. (선택)
+
+## 19. 보고서
+- 작업 보고서: 요청, 결과, 실행 방법, 실제 확인한 것, 결정 기록(자동/사람), 중단과 이어가기, 비용, 보류 항목, **사람이 확인할 항목**.
+- 일일 보고서: 작업 목록, 실패·보류, 서버 검토 결과, 비용 합계.
+- `/report`는 최근 작업 또는 일일 보고서를 보여 준다. 파일은 `NEWAI_HOME/reports/`.
