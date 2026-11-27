@@ -32,7 +32,7 @@ newai/
 ## 2. 데이터 폴더 (`NEWAI_HOME`)
 
 ```
-config.yaml  policy.yaml  servers.yaml  secrets.yaml(권한 600)
+config.yaml  policy.yaml  roles.yaml  servers.yaml  secrets.yaml(권한 600)
 pipelines/*.yaml   newai.db   server.port   server.token
 logs/  reports/  screenshots/  _projects/  worktrees/  judge-sandbox/
 ```
@@ -115,6 +115,24 @@ stages:
 ```
 단계 추가·삭제는 이 목록을 고치면 된다. `model`이 없으면 `runner.model`.
 
+### 3.3-1 `roles.yaml`
+```yaml
+roles:
+  planner:    { model: claude-opus-5-5, tools: [Read, Glob, Grep, Write], write_only: [docs/], prompt: planner.md.tmpl }
+  researcher: { model: claude-sonnet-5-5, tools: [Read, Glob, Grep, WebFetch, WebSearch], prompt: researcher.md.tmpl, max_turns: 30 }
+  implementer:{ model: claude-opus-5-5, prompt: implementer.md.tmpl }
+  tester:     { model: claude-sonnet-5-5, tools: [Read, Glob, Grep, Bash, Write], write_only: [docs/verification.md], prompt: tester.md.tmpl }
+  debugger:   { model: claude-opus-5-5, prompt: debugger.md.tmpl, max_retries: 2 }
+routing:
+  small:  [implementer, tester]
+  medium: [implementer, tester]        # researcher는 implementer의 하위 에이전트로 항상 사용 가능
+  large:  pipeline:default
+  on_test_fail: debugger
+```
+- `tools`가 없으면 정책이 허용하는 모든 도구. `write_only`는 그 경로 밖 쓰기를 거부한다(정책보다 앞선 역할 제한).
+- 파이프라인 단계에 `role: tester`처럼 역할을 붙이면 그 역할의 도구·모델·지시문을 쓴다.
+- `config.yaml`: `roles: { routing: auto | single | full }` (기본 auto).
+
 ### 3.4 `servers.yaml`
 ```yaml
 servers:
@@ -134,8 +152,8 @@ servers:
 | 표 | 주요 열 |
 |---|---|
 | projects | id, name, path(normPath), kind(new/existing), commit_enabled, language, created_at |
-| jobs | id, project_id, kind(chat/pipeline/server-check/batch), request, status, after_job_id, session_id, pipeline_stage, attempt, cost_usd, created_at, started_at, finished_at |
-| sessions | id(SDK 세션 ID), job_id, last_total_cost_usd, model |
+| jobs | id, project_id, kind(chat/pipeline/server-check/batch), size(small/medium/large), request, status, after_job_id, session_id, pipeline_stage, attempt, cost_usd, created_at, started_at, finished_at |
+| sessions | id(SDK 세션 ID), job_id, role, last_total_cost_usd, model |
 | events | id, job_id, ts, type, payload(json) |
 | decisions | id, job_id, source(ask/plan/permission/tail/clarify/bridge), question(json), candidates(json), policy_level, status(pending/paused/resolved/cancelled), preselected, resolved_by(human/auto/preselect/policy), answer(json), created_at, deadline_at, paused_ms, resolved_at |
 | interruptions | id, job_id, cause, detail, wait_until, attempt, resumed_at |
@@ -184,6 +202,34 @@ servers:
   "policyLevel": "wait", "deadlineAt": "2026-11-27T10:01:00Z", "paused": false, "preselected": null
 }
 ```
+
+## 6-1. 결정 카드 동작 규칙
+
+| 상황 | 동작 |
+|---|---|
+| wait 카드 마감 | 골라 둔 답 > 자동 선택 가능한 안 중 점수 1순위 > 둘 다 없으면 마감을 없애고 사람을 기다림(알림) |
+| human 카드 | 마감 없음. 골라 두기는 사람의 선택이므로 즉시 적용 |
+| 타이머 멈춤 | 멈춘 시간만큼 마감이 늦어짐 |
+| 대기 시간 변경 | 떠 있는 wait 카드의 마감을 `생성 시각 + 새 대기 시간 + 멈춘 시간`으로 다시 계산. 이미 지났으면 즉시 처리 |
+| 판단 모델 실패 | 원래 선택지 순서로 점수(규칙 점수), 카드에 `scoredBy: rule` 기록 |
+| 판단 모델이 원래 선택지를 빠뜨림 | 빠진 선택지는 규칙 점수로 채움. 원래 없던 라벨은 제안(`proposed`)으로만 1개 허용 |
+| 서버 재시작 | DB의 열린 카드를 되살림. 마감이 지났으면 즉시 처리 |
+
+권한 카드는 점수화를 건너뛰고 고정 후보 두 개를 쓴다: `허용`(wait면 자동 선택 가능) 60점, `거부` 40점. 직접 입력한 답은 거부 이유로 에이전트에게 전달된다.
+계획 승인 카드의 후보는 `계획 승인`, `보완 요청`이며 판단 모델이 계획 본문을 보고 점수화한다. 직접 입력은 보완 요청 내용으로 전달된다.
+AskUserQuestion의 여러 질문은 질문마다 카드를 하나씩 만든다. 여러 개 고르기(multiSelect) 질문도 추천안 하나를 고른다. 여러 개가 필요하면 직접 입력을 쓴다.
+
+### 도구 판정(`src/safety/tool-classify.ts`)
+| 도구 | 판정 |
+|---|---|
+| Bash, PowerShell | 명령 규칙 + 리다이렉트(`>`, `>>`, `tee`) 대상 경로 |
+| Write, Edit, MultiEdit, NotebookEdit | 파일 쓰기 규칙 |
+| Read | 비밀 파일이면 사람 승인 |
+| Glob, Grep | 허용(경로가 비밀 파일이면 읽기 규칙) |
+| WebFetch | 주소 규칙 / WebSearch: 외부(대기) |
+| `mcp__*` | 대기 |
+| 질문 도구 | 결정 엔진이 처리 |
+| 그 밖의 알 수 없는 도구 | 대기 |
 
 ## 7. 명령
 
@@ -258,5 +304,7 @@ harness check-web http://127.0.0.1:5173 \
 | 통합(가짜) | 결정 엔진 + FakeScorer, 러너 반복(완료 검사 2회, 끝 질문, 이어가기 5종) + 가짜 SDK | node:test | 시나리오별 상태 전이·횟수 상한 일치 |
 | 터미널 | 렌더링(깜빡임 없음 = 프레임당 write 1회, 화면 지우기 시퀀스 없음), 키 해석 | node-pty | 출력 스냅숏 일치 |
 | 웹 | 대시보드 카드 키보드 조작, 대기 시간 변경 즉시 반영, 릴리스 버튼 확인창 | `harness check-web` | 종료 코드 0 |
+| 실제 E2E(②) | `npm run e2e:decision`: 임시 데이터 폴더, 대기 20초, Haiku | 실제 Claude | 질문 카드가 20초 뒤 자동 결정, 직접 push와 스크립트 안 push 모두 원격에 도달하지 않음 |
 | 실제 E2E | 시험용 하네스(다른 포트·임시 NEWAI_HOME), 짧은 요청 | 실제 Claude | 첫 요청으로 웹 화면 + check-web + 한국어 보고 |
+| 역할 비교 | 같은 요청을 `single`과 `auto`로 실행 | 장시간 시나리오 안 | 비용·시간·검증 통과율 표 |
 | 장시간 | 1~2시간 무인: 파이프라인 + 후속 요청 + 일부러 낸 중단(서버 강제 종료, 네트워크 차단, 비용 한도, 가짜 사용량 한도) | 스크립트 | 모두 이어 감, 보고서에 "사람이 확인할 항목" |

@@ -163,6 +163,17 @@ export class Policy {
     return strictest(matches);
   }
 
+  /** Bash 명령 + 명령이 쓰는 파일(>, >>, tee)의 경로 판정을 합친다. cd로 폴더를 바꾸면 상대 경로는 정확하지 않다. */
+  classifyBashIn(cmd: string, workdir: string): Verdict {
+    const base = this.classifyBash(cmd);
+    const matches = [...base.matches];
+    for (const t of writeTargets(cmd)) {
+      const v = this.classifyWrite(t, workdir);
+      if (v.level !== 'allow') matches.push(...v.matches.map((m) => ({ ...m, reason: `${m.reason}(${t})` })));
+    }
+    return strictest(matches);
+  }
+
   classifyWrite(file: string, workdir: string): Verdict {
     const matches: Match[] = [];
     const n = this.norm(file, workdir);
@@ -195,6 +206,17 @@ export class Policy {
     const t = text.toLowerCase();
     return this.file.auto_select_exclude.some((w) => t.includes(w.toLowerCase()));
   }
+}
+
+const NULL_DEVICES = new Set(['/dev/null', 'nul', '$null', '/dev/stdout', '/dev/stderr']);
+
+/** 명령이 쓰는 파일 경로(리다이렉트 >, >>, tee 대상)를 뽑는다. */
+export function writeTargets(cmd: string): string[] {
+  const out: string[] = [];
+  const unq = (s: string) => s.replace(/^['"]|['"]$/g, '');
+  for (const m of cmd.matchAll(/(?:^|[^<>&\d-])>{1,2}\|?\s*([^\s;&|<>()]+)/g)) out.push(unq(m[1]));
+  for (const m of cmd.matchAll(/\btee\s+((?:-\S+\s+)*)([^\s;&|<>()]+)/g)) out.push(unq(m[2]));
+  return out.filter((t) => t && !t.startsWith('&') && !NULL_DEVICES.has(t.toLowerCase()));
 }
 
 export function policyPath(home: string): string {

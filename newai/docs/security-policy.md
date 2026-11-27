@@ -56,18 +56,25 @@ Bash 명령은 맞는 규칙을 모두 찾고 가장 엄격한 단계를 쓴다.
 | 2. PreToolUse 훅 + `canUseTool` | `policy.yaml` 규칙으로 Bash·파일·웹 도구 판정 | 직접 명령 |
 | 3. git 환경 변수 | 에이전트 환경에 `GIT_CONFIG_COUNT=N`, `GIT_CONFIG_KEY_i=url.newai-blocked://.pushInsteadOf`, 값은 `/`, `https://`, `http://`, `ssh://`, `git@`, `file://`, Windows 드라이브(`C:` 등) | 스크립트·빌드 도구 안의 push |
 | 4. 안내 스크립트 | PATH 앞에 `git-remote-newai-blocked` 두어 "push는 릴리스 단계에서" 한국어 메시지 출력 | 오류 문구 혼란 |
-| 5. 자격 증명 분리 | 에이전트 환경에서 `GH_TOKEN`, `GITHUB_TOKEN`, `NPM_TOKEN` 등 제거, `GIT_TERMINAL_PROMPT=0` | 토큰을 이용한 우회 |
+| 5. 자격 증명 분리 | 에이전트 환경에서 `GH_TOKEN`, `GITHUB_TOKEN`, `GITLAB_TOKEN`, `NPM_TOKEN`, 배포 서비스 토큰, `SSH_AUTH_SOCK` 제거, `GIT_TERMINAL_PROMPT=0`. Claude 인증 변수는 에이전트 자체에 필요하므로 남긴다 | 토큰을 이용한 우회 |
 | 6. 경로 감시 | 파일 도구 경로와 Bash 리다이렉트 대상을 `normPath`로 정규화해 판정 | 폴더 밖·보호 경로 쓰기 |
 | 7. 판단 모델 격리 | 빈 폴더, `settingSources: []`, 도구 없음 | 다른 프로젝트 기억에 의한 판단 오염 |
 | 8. 서버 접근 제어 | 127.0.0.1 바인딩, 로컬 토큰, Origin 검사, 릴리스 버튼은 1회용 확인 토큰 | 다른 웹페이지에서의 요청 위조 |
 
 실측: 3번 겹으로 로컬 경로·https 원격·스크립트 안의 push가 모두 막히고 fetch는 영향이 없었다(`feasibility.md`).
 
+② 단계 실제 E2E(Haiku)에서 두 겹이 각각 동작하는 것을 확인했다.
+- 에이전트가 `git push origin HEAD:main`을 직접 실행하자 2번 겹(PreToolUse 훅)이 거부했다.
+- `sh scripts/build.sh` 안에 숨은 push는 훅이 볼 수 없었고, 3번 겹(git 환경 변수)이 막아 안내 문구를 냈다.
+- 두 경우 모두 원격 저장소에는 아무것도 올라가지 않았다.
+
 ## 5. 알려진 한계
 
 - Bash 명령 문자열 검사는 `eval`, 인코딩, 다른 언어 스크립트로 우회될 수 있다. 그래서 git 환경 변수와 자격 증명 분리를 함께 쓴다.
 - 에이전트가 `env -u GIT_CONFIG_COUNT`처럼 환경 변수를 지우면 3번 겹은 사라진다. 이 패턴은 2번 겹에서 human으로 잡고, 5번 겹 때문에 토큰도 없다.
 - `user@host:repo` 같은 짧은 SSH 주소는 접두사로 다 막을 수 없다. 5번 겹과 2번 겹에 의존한다.
+- `SSH_AUTH_SOCK`을 지우므로 에이전트는 SSH 키 에이전트를 쓰는 원격에서 fetch·clone도 못 한다(원격 통신은 원래 대기 단계).
+- Bash 리다이렉트 판정은 `cd`로 폴더를 바꾼 뒤의 상대 경로를 정확히 풀지 못한다.
 - 완전한 격리가 필요하면 운영체제 수준 격리(별도 사용자 계정, 컨테이너)를 추가로 검토한다. 이번 범위에는 넣지 않는다.
 
 ## 6. 비밀 관리
