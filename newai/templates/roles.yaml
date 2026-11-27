@@ -1,0 +1,32 @@
+# 역할 정의. 역할 이름이 아니라 "새 대화, 다른 도구, 명확한 판정 기준"에서 효과가 난다.
+# tools가 없으면 정책이 허용하는 모든 도구. read_only: true면 파일을 바꾸는 도구와 명령을 거부한다.
+roles:
+  implementer:
+    model: claude-opus-5-5
+  researcher:                 # 구현 담당이 부르는 하위 에이전트
+    model: claude-sonnet-5-5
+    tools: [Read, Glob, Grep, WebFetch, WebSearch]
+    read_only: true
+    max_turns: 30
+  tester:
+    model: claude-sonnet-5-5
+    tools: [Read, Glob, Grep, Bash]
+    read_only: true
+  debugger:
+    model: claude-opus-5-5
+    max_retries: 2
+  reviewer:
+    model: claude-sonnet-5-5
+    tools: [Read, Glob, Grep, Bash]
+    read_only: true
+  releaser:
+    model: claude-sonnet-5-5
+    tools: [Read, Glob, Grep, Bash]
+    read_only: true
+
+routing:
+  small: [implementer, tester]
+  medium: [implementer, tester]   # researcher는 implementer의 하위 에이전트로 항상 쓸 수 있다
+  large: [implementer, tester]    # ⑥ 파이프라인 구현 전까지는 medium과 같다
+  on_test_fail: debugger
+  review: sensitive               # sensitive | always | never

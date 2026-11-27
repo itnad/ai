@@ -7,11 +7,8 @@ export interface Clock {
 
 export const realClock: Clock = {
   now: () => Date.now(),
-  setTimer: (fn, ms) => {
-    const t = setTimeout(fn, Math.max(0, ms));
-    t.unref?.();
-    return t;
-  },
+  // unref하지 않는다: 이어가기 대기나 결정 카드 마감 중에 프로세스가 끝나 버리면 안 된다.
+  setTimer: (fn, ms) => setTimeout(fn, Math.max(0, ms)),
   clearTimer: (h) => clearTimeout(h as NodeJS.Timeout),
 };
 

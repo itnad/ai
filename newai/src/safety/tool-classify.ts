@@ -9,15 +9,15 @@ export const QUESTION_TOOLS = new Set(['AskUserQuestion', 'ExitPlanMode']);
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const verdict = (level: Level, reason: string, source: string): Verdict => ({ level, reason, matches: [{ level, reason, source }] });
 
-export interface ToolCall { toolName: string; input: Record<string, unknown>; workdir: string }
+export interface ToolCall { toolName: string; input: Record<string, unknown>; workdir: string; /** 작업 폴더 밖이지만 쓸 수 있는 하네스 임시 폴더 */ writable?: string[] }
 
 export function classifyTool(policy: Policy, call: ToolCall): Verdict {
   const { toolName, input, workdir } = call;
   if (QUESTION_TOOLS.has(toolName)) return verdict('allow', '질문 도구(결정 엔진이 처리)', 'question');
-  if (toolName === 'Bash' || toolName === 'PowerShell') return policy.classifyBashIn(str(input.command), workdir);
+  if (toolName === 'Bash' || toolName === 'PowerShell') return policy.classifyBashIn(str(input.command), workdir, call.writable);
   if (toolName in WRITE_TOOLS) {
     const p = str(input[WRITE_TOOLS[toolName]]);
-    return p ? policy.classifyWrite(p, workdir) : verdict('wait', '쓰기 경로가 없음', 'tool');
+    return p ? policy.classifyWrite(p, workdir, call.writable) : verdict('wait', '쓰기 경로가 없음', 'tool');
   }
   if (toolName === 'Read') return policy.classifyRead(str(input.file_path), workdir);
   if (toolName === 'Grep' || toolName === 'Glob') {

@@ -1,15 +1,16 @@
 // PreToolUse 훅: 권한 콜백과 독립된 두 번째 겹.
 // 프로젝트 설정의 허용 규칙이나 권한 모드 때문에 canUseTool이 불리지 않아도 여기서 막는다.
 import type { HookCallback } from '@anthropic-ai/claude-agent-sdk';
-import type { Policy } from './policy.ts';
-import { classifyTool, QUESTION_TOOLS } from './tool-classify.ts';
+import type { Policy, Verdict } from './policy.ts';
+import { classifyTool, QUESTION_TOOLS, type ToolCall } from './tool-classify.ts';
 
-export function makePreToolUseHook(o: { policy: Policy; workdir: string; log?: (e: { tool: string; level: string; reason: string }) => void }): HookCallback {
+export function makePreToolUseHook(o: { policy: Policy; workdir: string; log?: (e: { tool: string; level: string; reason: string }) => void; extraCheck?: (call: ToolCall) => Verdict | null; writable?: string[] }): HookCallback {
   return async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
     const toolName = input.tool_name;
     if (QUESTION_TOOLS.has(toolName)) return {};
-    const v = classifyTool(o.policy, { toolName, input: (input.tool_input ?? {}) as Record<string, unknown>, workdir: input.cwd || o.workdir });
+    const call = { toolName, input: (input.tool_input ?? {}) as Record<string, unknown>, workdir: input.cwd || o.workdir, writable: o.writable };
+    const v = o.extraCheck?.(call) ?? classifyTool(o.policy, call);
     if (v.level === 'allow') return {};
     o.log?.({ tool: toolName, level: v.level, reason: v.reason });
     if (v.level === 'deny') {

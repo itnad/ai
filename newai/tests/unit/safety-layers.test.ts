@@ -175,3 +175,28 @@ test('Windows용 차단 접두사에는 드라이브 문자와 UNC가 들어간�
   assert.ok(values.includes('C:') && values.includes('d:') && values.includes('\\\\'));
   assert.equal(env.Path, 'C:\\newai\\bin;C:\\Windows');
 });
+
+test('따옴표 안의 > 와 화살표 함수는 리다이렉트가 아니다', () => {
+  assert.deepEqual(writeTargets(`node -e "const f = async () => { console.log('a > b') }"`), []);
+  assert.deepEqual(writeTargets(`node -e 'x => x' > "out file.txt"`), ['out file.txt']);
+  assert.deepEqual(writeTargets(`echo "a" > b.txt`), ['b.txt']);
+});
+
+test('읽기 전용 역할: 하네스 임시 폴더 안 쓰기는 허용, 밖은 거부', async () => {
+  const { readOnlyGuard } = await import('../../src/safety/role-guard.ts');
+  const call = (toolName: string, input: Record<string, unknown>) => readOnlyGuard({ toolName, input, workdir: '/work/p', writable: ['/home/u/.newai/reports/j1/scratch'] });
+  assert.equal(call('Write', { file_path: '/home/u/.newai/reports/j1/scratch/check.js' }), null);
+  assert.equal(call('Write', { file_path: '/work/p/index.html' })?.level, 'deny');
+  assert.equal(call('Bash', { command: 'mkdir -p /home/u/.newai/reports/j1/scratch && cat > /home/u/.newai/reports/j1/scratch/c.js <<EOF' }), null);
+  assert.equal(call('Bash', { command: 'mkdir build' })?.level, 'deny');
+  assert.equal(call('Bash', { command: 'rm -f /work/p/a.txt' })?.level, 'deny');
+  assert.equal(call('Bash', { command: `node -e "(async () => { const b = await import('playwright') })()"` }), null);
+  assert.equal(call('Bash', { command: 'git commit -m x' })?.level, 'deny');
+  assert.equal(call('Bash', { command: 'npx jest' }), null);
+});
+
+test('정책: 임시 폴더 쓰기는 작업 폴더 밖이어도 대기 없이 허용', () => {
+  assert.equal(policy.classifyWrite('/tmp/s/a.js', '/work/p', ['/tmp/s']).level, 'allow');
+  assert.equal(policy.classifyWrite('/tmp/other/a.js', '/work/p', ['/tmp/s']).level, 'wait');
+  assert.equal(policy.classifyBashIn('echo x > /tmp/s/out.txt', '/work/p', ['/tmp/s']).level, 'allow');
+});

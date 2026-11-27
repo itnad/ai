@@ -8,6 +8,9 @@ import { ensureHome, getPaths, layout, separationProblems, type Paths } from '..
 import { computeCodeVersion } from '../core/version.ts';
 import { listTables, openDb, SCHEMA_VERSION } from '../db/db.ts';
 import { LEVEL_KO, Policy, PolicyError, type Level, type Verdict } from '../safety/policy.ts';
+import { createJob } from '../queue/jobs.ts';
+import { createProject, getProject, registerExisting } from '../queue/projects.ts';
+import { createRuntime } from '../runtime.ts';
 
 /** policy check 종료 코드: 스크립트에서 판정을 쓸 수 있게 단계마다 다르게 둔다. */
 export const POLICY_EXIT: Record<Level, number> = { allow: 0, wait: 10, human: 11, deny: 12 };
@@ -24,6 +27,8 @@ const HELP = `사용법: harness <명령> [옵션]
   policy check --option "<선택지 문구>"
   config get <키>                예: config get decision.timeout
   config set <키> <값>           예: config set decision.timeout 5m
+  run "<요청>" [--project <이름> | --workdir <폴더>] [--model <모델>]
+                                 요청 하나를 이 창에서 끝까지 실행(서버 없이). 결정 카드는 대기 시간 후 자동 선택
   help                           이 도움말
 
 공통 옵션
@@ -143,6 +148,41 @@ async function config(a: Args): Promise<number> {
   return 2;
 }
 
+const STATUS_KO: Record<string, string> = { done: '완료', needs_human: '사람 확인 필요', failed: '실패', cancelled: '취소' };
+
+async function run(a: Args): Promise<number> {
+  const request = a._.slice(1).join(' ').trim();
+  if (!request) { err('요청을 주세요. 예: harness run "인사말을 출력하는 hello.js 만들기" --project hello'); return 2; }
+  const t0 = Date.now();
+  const ts = () => `[${String(Math.round((Date.now() - t0) / 1000)).padStart(4)}초]`;
+  const rt = await createRuntime({
+    home: typeof a.opts.home === 'string' ? a.opts.home : undefined,
+    modelOverride: typeof a.opts.model === 'string' ? a.opts.model : undefined,
+    onEvent: (e) => out(`${ts()} ${e.role ? `[${e.role}] ` : ''}${e.text.replace(/\n/g, ' ')}`),
+  });
+  rt.engine.on('created', (c) => {
+    out(`${ts()} 결정 카드: ${c.question.split('\n')[0]}`);
+    c.candidates.forEach((x, i) => out(`         ${i + 1}. ${x.label} (${x.score}점${x.autoSelectable ? '' : ', 자동 선택 안 함'}) ${x.reason}`));
+    out(c.deadlineAt ? `         ${Math.round((c.deadlineAt - Date.now()) / 1000)}초 뒤 1순위로 진행합니다.` : '         사람 승인이 필요합니다.');
+  });
+  rt.engine.on('resolved', (r) => out(`${ts()} 결정: ${r.answer.kind === 'choice' ? r.answer.label : r.answer.text} (${r.resolvedBy === 'auto' ? '자동' : r.resolvedBy})`));
+  let project;
+  if (typeof a.opts.workdir === 'string') project = registerExisting(rt.db, path.resolve(a.opts.workdir));
+  else {
+    const name = typeof a.opts.project === 'string' ? a.opts.project : `p-${new Date().toISOString().slice(0, 10)}`;
+    project = getProject(rt.db, name) ?? createProject(rt.db, rt.L.projects, name);
+  }
+  const job = createJob(rt.db, { projectId: project.id, request });
+  out(`작업 ${job.id} 시작 (프로젝트 ${project.name}: ${project.path})`);
+  const r = await rt.runner.run(job.id);
+  out('');
+  out(`결과: ${STATUS_KO[r.status] ?? r.status}, 비용 $${r.costUsd.toFixed(4)}, 중단 후 이어가기 ${r.interruptions.length}번`);
+  if (r.humanItems.length) { out('사람이 확인할 항목:'); r.humanItems.forEach((h) => out(`  - ${h}`)); }
+  out(`보고서: ${r.reportPath}`);
+  rt.db.close();
+  return r.status === 'done' ? 0 : 1;
+}
+
 export async function main(argv: string[]): Promise<number> {
   const a = parseArgs(argv);
   const [cmd, sub] = a._;
@@ -158,6 +198,7 @@ export async function main(argv: string[]): Promise<number> {
       }
       case 'policy': if (sub === 'check') return policyCheck(a); break;
       case 'config': return await config(a);
+      case 'run': return await run(a);
       case undefined: case 'help': case '--help': out(HELP); return 0;
     }
     err(`알 수 없는 명령입니다: ${a._.join(' ')}\n`);

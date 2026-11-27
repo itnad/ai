@@ -15,6 +15,8 @@ export interface HomeLayout {
   home: string;
   config: string;
   policy: string;
+  roles: string;
+  bin: string;
   servers: string;
   secrets: string;
   pipelinesDir: string;
@@ -69,6 +71,8 @@ export function layout(home: string): HomeLayout {
     home,
     config: j('config.yaml'),
     policy: j('policy.yaml'),
+    roles: j('roles.yaml'),
+    bin: j('bin'),
     servers: j('servers.yaml'),
     secrets: j('secrets.yaml'),
     pipelinesDir: j('pipelines'),
@@ -96,13 +100,14 @@ export function separationProblems(p: Paths, platform: NodeJS.Platform = process
 export function ensureHome(p: Paths): { created: string[] } {
   const L = layout(p.home);
   const created: string[] = [];
-  for (const d of [L.home, L.pipelinesDir, L.logs, L.reports, L.screenshots, L.projects, L.worktrees, L.judgeSandbox]) {
+  for (const d of [L.home, L.bin, L.pipelinesDir, L.logs, L.reports, L.screenshots, L.projects, L.worktrees, L.judgeSandbox]) {
     if (!fs.existsSync(d)) { fs.mkdirSync(d, { recursive: true }); created.push(d); }
   }
   const tpl = path.join(p.installDir, 'templates');
   const copies: [string, string][] = [
     [path.join(tpl, 'config.yaml'), L.config],
     [path.join(tpl, 'policy.yaml'), L.policy],
+    [path.join(tpl, 'roles.yaml'), L.roles],
     [path.join(tpl, 'servers.yaml'), L.servers],
   ];
   for (const f of fs.readdirSync(path.join(tpl, 'pipelines'))) copies.push([path.join(tpl, 'pipelines', f), path.join(L.pipelinesDir, f)]);

@@ -123,11 +123,14 @@ roles:
   implementer:{ model: claude-opus-5-5, prompt: implementer.md.tmpl }
   tester:     { model: claude-sonnet-5-5, tools: [Read, Glob, Grep, Bash, Write], write_only: [docs/verification.md], prompt: tester.md.tmpl }
   debugger:   { model: claude-opus-5-5, prompt: debugger.md.tmpl, max_retries: 2 }
+  reviewer:   { model: claude-sonnet-5-5, tools: [Read, Glob, Grep, Bash], read_only: true, prompt: reviewer.md.tmpl }
+  releaser:   { model: claude-sonnet-5-5, tools: [Read, Glob, Grep, Bash], read_only: true, prompt: releaser.md.tmpl }
 routing:
   small:  [implementer, tester]
   medium: [implementer, tester]        # researcher는 implementer의 하위 에이전트로 항상 사용 가능
   large:  pipeline:default
   on_test_fail: debugger
+  review: sensitive        # sensitive(민감한 변경일 때) | always | never. 릴리스 전에는 설정과 무관하게 항상
 ```
 - `tools`가 없으면 정책이 허용하는 모든 도구. `write_only`는 그 경로 밖 쓰기를 거부한다(정책보다 앞선 역할 제한).
 - 파이프라인 단계에 `role: tester`처럼 역할을 붙이면 그 역할의 도구·모델·지시문을 쓴다.
@@ -231,6 +234,21 @@ AskUserQuestion의 여러 질문은 질문마다 카드를 하나씩 만든다. 
 | 질문 도구 | 결정 엔진이 처리 |
 | 그 밖의 알 수 없는 도구 | 대기 |
 
+## 6-2. 러너 동작 규칙(`src/runner/`)
+
+| 단계 | 규칙 |
+|---|---|
+| 언어 | 요청 문장에 언어 지정이 있으면 그것, 없으면 프로젝트 설정, 전역 설정, 한국어 순 |
+| 크기 판정 | `/p`나 빈 프로젝트는 큼. 그 외는 판단 모델(실패 시 규칙: 짧은 문구 수정은 작음, 나머지 보통) |
+| 완료 검사 | 한국어 비율 0.5 이상(언어가 한국어일 때만), "실행 방법", 명령을 한 번 이상 실행했는지와 "실제로 확인한 것", "보류 항목". 부족하면 같은 세션에 보완 지시(기본 최대 2번) |
+| 보고 끝 질문 | 마지막 문단이 질문이면 판단 모델이 질문·선택지로 바꾸고 "여기서 마무리"를 항상 붙여 결정 카드로. 답을 같은 세션에 보낸다(기본 최대 3번) |
+| 독립 테스트 | 새 세션, 읽기 전용. 판정 형식이 없으면 한 번 다시 요청. 실패하면 디버거(새 세션) 후 다시 테스트(기본 최대 2번). 그래도 실패면 사람 확인 필요 |
+| 리뷰 | 바뀐 파일·추가된 줄이 민감한 영역이면 리뷰어(새 세션, 읽기 전용). 높음·중간은 구현 세션에서 한 번 고치고 테스트를 다시 돌린다 |
+| 결과 | 테스트 통과(또는 single)이고 완료 검사 부족이 없으면 완료, 아니면 사람 확인 필요. 하네스 오류만 실패 |
+| 보고서 | `NEWAI_HOME/reports/<작업ID>/report.md`와 역할별 원문(`implementer.md`, `tester-N.md`, `debugger-N.md`, `reviewer.md`) |
+
+읽기 전용 역할 제한(`src/safety/role-guard.ts`): 파일 쓰기 도구, 리다이렉트·`tee`로 파일 쓰기, `git commit/add/checkout/reset` 같은 저장소 변경, `sed -i`, 패키지 설치를 거부한다. `rm`·`mv`·`cp`·`mkdir`·`touch`는 모든 경로 인자가 하네스 임시 폴더 안일 때만 허용한다.
+
 ## 7. 명령
 
 ### 7.1 `newai` 대화 명령
@@ -259,6 +277,7 @@ AskUserQuestion의 여러 질문은 질문마다 카드를 하나씩 만든다. 
 | serve [--port --home] | 서버 실행(전경) | |
 | stop / status / doctor | 서버 중지 / 상태 / 환경 점검 | |
 | init | 데이터 폴더와 기본 설정 만들기(있는 파일은 그대로) | |
+| run "요청" [--project 이름 / --workdir 폴더] [--model 모델] | 요청 하나를 이 창에서 끝까지 실행(서버 없이). 결정 카드는 대기 시간 후 자동 선택. `--model`은 모든 역할을 그 모델로(설정 파일은 그대로) | 0 완료, 1 그 외 |
 | config get/set <키> [값] | 설정 조회·변경(검증 후 저장, 주석 유지) | 1 검증 실패 |
 | check-web URL [옵션] | 7.3 | 0 통과, 2 사용 오류, 3 기대 실패, 4 접속 실패 |
 | keytest | 키 입력 바이트 표시 | |
@@ -305,6 +324,7 @@ harness check-web http://127.0.0.1:5173 \
 | 터미널 | 렌더링(깜빡임 없음 = 프레임당 write 1회, 화면 지우기 시퀀스 없음), 키 해석 | node-pty | 출력 스냅숏 일치 |
 | 웹 | 대시보드 카드 키보드 조작, 대기 시간 변경 즉시 반영, 릴리스 버튼 확인창 | `harness check-web` | 종료 코드 0 |
 | 실제 E2E(②) | `npm run e2e:decision`: 임시 데이터 폴더, 대기 20초, Haiku | 실제 Claude | 질문 카드가 20초 뒤 자동 결정, 직접 push와 스크립트 안 push 모두 원격에 도달하지 않음 |
+| 실제 E2E(③) | `npm run e2e:runner`: 첫 구현 세션을 10초 뒤 일부러 끊음 | 실제 Claude | 네트워크 중단 기록, 같은 세션으로 이어감, 독립 테스트 통과 |
 | 실제 E2E | 시험용 하네스(다른 포트·임시 NEWAI_HOME), 짧은 요청 | 실제 Claude | 첫 요청으로 웹 화면 + check-web + 한국어 보고 |
 | 역할 비교 | 같은 요청을 `single`과 `auto`로 실행 | 장시간 시나리오 안 | 비용·시간·검증 통과율 표 |
 | 장시간 | 1~2시간 무인: 파이프라인 + 후속 요청 + 일부러 낸 중단(서버 강제 종료, 네트워크 차단, 비용 한도, 가짜 사용량 한도) | 스크립트 | 모두 이어 감, 보고서에 "사람이 확인할 항목" |

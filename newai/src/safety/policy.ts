@@ -164,22 +164,24 @@ export class Policy {
   }
 
   /** Bash 명령 + 명령이 쓰는 파일(>, >>, tee)의 경로 판정을 합친다. cd로 폴더를 바꾸면 상대 경로는 정확하지 않다. */
-  classifyBashIn(cmd: string, workdir: string): Verdict {
+  classifyBashIn(cmd: string, workdir: string, writable: string[] = []): Verdict {
     const base = this.classifyBash(cmd);
     const matches = [...base.matches];
     for (const t of writeTargets(cmd)) {
-      const v = this.classifyWrite(t, workdir);
+      const v = this.classifyWrite(t, workdir, writable);
       if (v.level !== 'allow') matches.push(...v.matches.map((m) => ({ ...m, reason: `${m.reason}(${t})` })));
     }
     return strictest(matches);
   }
 
-  classifyWrite(file: string, workdir: string): Verdict {
+  /** writable: 하네스가 만든 임시 폴더처럼 작업 폴더 밖이어도 대기 없이 쓸 수 있는 곳 */
+  classifyWrite(file: string, workdir: string, writable: string[] = []): Verdict {
     const matches: Match[] = [];
     const n = this.norm(file, workdir);
     if (this.isProtected(n)) matches.push({ level: this.file.files.write_protected, reason: '하네스 코드·정책 보호 경로', source: 'files.write_protected' });
     if (this.isSecretName(n)) matches.push({ level: this.file.files.write_secret_file, reason: '비밀 파일 쓰기', source: 'files.write_secret_file' });
-    if (!isInside(n, this.norm(workdir), { platform: this.platform, realpath: false })) {
+    const inside = (d: string) => isInside(n, this.norm(d), { platform: this.platform, realpath: false });
+    if (!inside(workdir) && !writable.some(inside)) {
       matches.push({ level: this.file.files.write_outside_workdir, reason: '작업 폴더 밖 쓰기', source: 'files.write_outside_workdir' });
     }
     return strictest(matches);
@@ -211,12 +213,21 @@ export class Policy {
 const NULL_DEVICES = new Set(['/dev/null', 'nul', '$null', '/dev/stdout', '/dev/stderr']);
 
 /** 명령이 쓰는 파일 경로(리다이렉트 >, >>, tee 대상)를 뽑는다. */
+/** 따옴표로 묶인 인자를 빈 자리로 바꾼다. 단 > 바로 뒤의 따옴표(리다이렉트 대상)는 남긴다. */
+function stripQuotedArgs(cmd: string): string {
+  return cmd.replace(/(>{1,2}\s*)?('[^']*'|"(?:[^"\\]|\\.)*")/g, (all, redir: string | undefined) => (redir ? all : ' '));
+}
+
 export function writeTargets(cmd: string): string[] {
   const out: string[] = [];
   const unq = (s: string) => s.replace(/^['"]|['"]$/g, '');
-  for (const m of cmd.matchAll(/(?:^|[^<>&\d-])>{1,2}\|?\s*([^\s;&|<>()]+)/g)) out.push(unq(m[1]));
-  for (const m of cmd.matchAll(/\btee\s+((?:-\S+\s+)*)([^\s;&|<>()]+)/g)) out.push(unq(m[2]));
-  return out.filter((t) => t && !t.startsWith('&') && !NULL_DEVICES.has(t.toLowerCase()));
+  // 따옴표 안의 > 는 리다이렉트가 아니다(예: node -e "() => {}"). 리다이렉트 대상 자체가 따옴표면 남긴다.
+  const bare = stripQuotedArgs(cmd);
+  const target = String.raw`("[^"]*"|'[^']*'|[^\s;&|<>()"']+)`;
+  for (const m of bare.matchAll(new RegExp(String.raw`(?:^|[^<>&\d=-])>{1,2}\|?\s*` + target, 'g'))) out.push(unq(m[1]));
+  // tee 대상은 따옴표로 묶여도 파일이므로 원래 명령에서 찾는다.
+  for (const m of cmd.matchAll(new RegExp(String.raw`\btee\s+((?:-\S+\s+)*)` + target, 'g'))) out.push(unq(m[2]));
+  return out.filter((t) => t && !t.startsWith('&') && !t.startsWith('-') && !NULL_DEVICES.has(t.toLowerCase()));
 }
 
 export function policyPath(home: string): string {

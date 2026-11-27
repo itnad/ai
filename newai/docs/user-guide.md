@@ -1,6 +1,6 @@
 # newai 사용 설명서 (초안)
 
-> **상태: 구현 중.** 지금 동작하는 것은 `harness doctor`, `harness init`, `harness policy check`, `harness config get/set`뿐이다. 나머지는 각 구현 단계가 끝날 때 실제 동작에 맞춰 고친다.
+> **상태: 구현 중.** 지금 동작하는 것은 `harness doctor`, `harness init`, `harness policy check`, `harness config get/set`, `harness run`이다. 나머지는 각 구현 단계가 끝날 때 실제 동작에 맞춰 고친다.
 
 ## 1. 설치
 
@@ -66,6 +66,20 @@ harness autostart install   # Windows 로그인 시 자동 실행(등록 전 확
 ```
 
 Telegram 원격 답변은 `secrets.yaml`에 봇 토큰과 chat ID를 넣고 `config.yaml`의 `notify.telegram: true`로 켠다.
+
+## 6-1. 요청 하나를 바로 실행하기(서버 없이)
+
+서버와 대화 화면(⑤ 단계)이 생기기 전에도 요청 하나를 끝까지 돌릴 수 있다.
+
+```bash
+harness run "greet.js 파일을 만들어 실행하면 안녕하세요를 출력하게 해 줘" --project greet
+```
+
+- 새 프로젝트는 데이터 폴더의 `_projects/<이름>`에 만들어진다. 기존 폴더는 `--workdir`로 지정한다.
+- 진행 상황, 결정 카드, 자동 선택 결과가 화면에 찍힌다. 이 단계에서는 카드를 화면에서 고를 수 없고, 대기 시간이 지나면 1순위로 진행한다.
+- 작업 크기에 따라 독립 테스트 담당이 다시 확인하고, 실패하면 디버거가 고친다. 민감한 변경이면 품질·보안 리뷰어가 본다.
+- 끝나면 결과와 "사람이 확인할 항목", 보고서 경로가 나온다.
+- 시험 삼아 싸게 돌리려면 `--model claude-haiku-5-5`처럼 모델을 지정한다. 설정 파일은 바뀌지 않는다.
 
 ## 7. 정책 확인
 

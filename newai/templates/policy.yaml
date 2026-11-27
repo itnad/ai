@@ -11,6 +11,8 @@ version: 1
 protected_paths:            # 쓰기는 files.write_protected 단계
   - ${INSTALL_DIR}
   - ${NEWAI_HOME}/policy.yaml
+  - ${NEWAI_HOME}/roles.yaml
+  - ${NEWAI_HOME}/bin
   - ${NEWAI_HOME}/config.yaml
   - ${NEWAI_HOME}/secrets.yaml
   - ${NEWAI_HOME}/pipelines

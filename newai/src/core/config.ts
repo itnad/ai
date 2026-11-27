@@ -53,6 +53,9 @@ export const ConfigSchema = z.object({
     restart: z.object({ delay: duration.default('30s'), max_attempts: z.number().int().min(0).default(3) }).strict().prefault({}),
     wall_clock: z.object({ max_attempts: z.number().int().min(0).default(3) }).strict().prefault({}),
   }).strict().prefault({}),
+  roles: z.object({
+    routing: z.enum(['auto', 'single', 'full']).default('auto'),
+  }).strict().prefault({}),
   projects: z.object({
     commit_default: z.boolean().default(false),
     history_items: z.number().int().min(0).max(50).default(5),

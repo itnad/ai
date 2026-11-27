@@ -30,6 +30,9 @@ resume:                       # 중단된 작업 자동 이어가기
   restart: { delay: 30s, max_attempts: 3 }
   wall_clock: { max_attempts: 3 }
 
+roles:
+  routing: auto               # auto: 작업 크기에 따라 역할 구성 / single: 한 세션만 / full: 항상 전체 구성
+
 projects:
   commit_default: false       # 새 프로젝트는 기본적으로 커밋하지 않는다(/commit on 으로 켬).
   history_items: 5            # 새 대화에 넣는 이전 작업 기록 개수

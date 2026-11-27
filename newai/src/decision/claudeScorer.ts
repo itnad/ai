@@ -1,8 +1,7 @@
 // 판단 모델: 빈 중립 폴더에서, 설정·메모리·도구 없이 선택지를 점수화한다 (요구사항 N6).
-import fs from 'node:fs';
-import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { clamp10, type Scorer, type ScoreInput, type ScoreResult } from './scorer.ts';
+import { runJudge, type JudgeOptions } from './judge.ts';
 import { CRITERIA, CRITERIA_KO } from './types.ts';
 
 const OutSchema = z.object({
@@ -69,7 +68,7 @@ export function buildScorerPrompt(input: ScoreInput): string {
   return lines.filter((l) => l !== '').join('\n');
 }
 
-export interface ClaudeScorerOptions { model: string; sandboxDir: string; timeoutMs?: number; env?: NodeJS.ProcessEnv }
+export type ClaudeScorerOptions = JudgeOptions;
 
 export class ClaudeScorer implements Scorer {
   private readonly o: ClaudeScorerOptions;
@@ -77,33 +76,13 @@ export class ClaudeScorer implements Scorer {
   constructor(o: ClaudeScorerOptions) { this.o = o; }
 
   async score(input: ScoreInput): Promise<ScoreResult> {
-    fs.mkdirSync(this.o.sandboxDir, { recursive: true });
-    const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), this.o.timeoutMs ?? 90_000);
-    const env: Record<string, string> = {};
-    for (const [k, v] of Object.entries(this.o.env ?? process.env)) if (v !== undefined) env[k] = v;
-    env.CLAUDE_CODE_DISABLE_AUTO_MEMORY = '1';
-    const options: Options = {
-      cwd: this.o.sandboxDir, settingSources: [], tools: [], model: this.o.model, maxTurns: 3,
-      systemPrompt: SYSTEM, persistSession: false, env, abortController: abort,
-      outputFormat: { type: 'json_schema', schema: JSON_SCHEMA },
+    const { value, costUsd } = await runJudge(this.o, SYSTEM, buildScorerPrompt(input), JSON_SCHEMA, OutSchema);
+    this.lastCostUsd = costUsd;
+    return {
+      options: value.options.map((x) => ({
+        label: x.label, description: x.description, proposed: x.proposed, reason: x.reason,
+        breakdown: Object.fromEntries(CRITERIA.map((k) => [k, clamp10(x.breakdown[k])])) as ScoreResult['options'][number]['breakdown'],
+      })),
     };
-    try {
-      for await (const m of query({ prompt: buildScorerPrompt(input), options })) {
-        if (m.type !== 'result') continue;
-        this.lastCostUsd = m.total_cost_usd;
-        if (m.subtype !== 'success') throw new Error(`판단 모델 실패: ${m.subtype}`);
-        const parsed = OutSchema.parse(m.structured_output ?? JSON.parse(m.result));
-        return {
-          options: parsed.options.map((x) => ({
-            label: x.label, description: x.description, proposed: x.proposed, reason: x.reason,
-            breakdown: Object.fromEntries(CRITERIA.map((k) => [k, clamp10(x.breakdown[k])])) as ScoreResult['options'][number]['breakdown'],
-          })),
-        };
-      }
-      throw new Error('판단 모델이 결과를 내지 않았습니다.');
-    } finally {
-      clearTimeout(timer);
-    }
   }
 }

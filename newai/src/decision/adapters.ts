@@ -2,7 +2,8 @@
 // AskUserQuestion → 질문마다 카드, ExitPlanMode → 계획 승인 카드, 그 외 도구 → 정책 판정 후 필요하면 권한 카드.
 import type { CanUseTool, PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import type { Policy } from '../safety/policy.ts';
-import { classifyTool, describeCall } from '../safety/tool-classify.ts';
+import type { Verdict } from '../safety/policy.ts';
+import { classifyTool, describeCall, type ToolCall } from '../safety/tool-classify.ts';
 import type { DecisionEngine } from './engine.ts';
 import type { Answer, Card, OptionIn, ScoreContext } from './types.ts';
 
@@ -18,6 +19,10 @@ export interface AdapterOptions {
   onDeferred?: (cards: Card[]) => void;
   /** 판정·결정을 기록한다(작업 기록용). */
   log?: (entry: { tool: string; level: string; reason: string; cardId?: string; outcome: string }) => void;
+  /** 정책보다 먼저 적용하는 검사(예: 읽기 전용 역할). null이면 정책으로 판정 */
+  extraCheck?: (call: ToolCall) => Verdict | null;
+  /** 작업 폴더 밖이지만 쓸 수 있는 하네스 임시 폴더 */
+  writable?: string[];
 }
 
 interface AskQuestion { question: string; header?: string; multiSelect?: boolean; options: OptionIn[] }
@@ -73,7 +78,8 @@ export function makeCanUseTool(o: AdapterOptions): NewaiCanUseTool {
       return { behavior: 'deny', message: `계획 보완 요청: ${feedback}` };
     }
 
-    const v = classifyTool(o.policy, { toolName, input, workdir: o.workdir });
+    const call = { toolName, input, workdir: o.workdir, writable: o.writable };
+    const v = o.extraCheck?.(call) ?? classifyTool(o.policy, call);
     if (v.level === 'allow') { log({ tool: toolName, level: v.level, reason: v.reason, outcome: 'allow' }); return { behavior: 'allow', updatedInput: input }; }
     if (v.level === 'deny') { log({ tool: toolName, level: v.level, reason: v.reason, outcome: 'deny' }); return { behavior: 'deny', message: `newai 정책으로 거부되었습니다: ${v.reason}. 다른 방법을 찾거나 보고서의 보류 항목에 적으세요.` }; }
 

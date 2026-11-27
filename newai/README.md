@@ -3,13 +3,15 @@
 Claude Code를 감싸는 개발 자동화 하네스. 사람이 없어도 멈추지 않고, 합리적으로 판단해서 계속 진행한다.
 push·배포 같은 되돌리기 어려운 일은 사람이 한다.
 
-**현재 상태: 구현 ② 결정 엔진·안전장치 완료.** 동작하는 명령: `harness doctor`, `harness init`, `harness policy check`, `harness config get/set`.
+**현재 상태: 구현 ③ 러너 완료.** 동작하는 명령: `harness doctor`, `harness init`, `harness policy check`, `harness config get/set`.
 
 ```bash
 npm install
 npm test
 node bin/harness.js doctor
 npm run e2e:decision   # 실제 Claude 호출(Haiku, 짧은 요청 2건)
+npm run e2e:runner     # 실제 Claude 호출(Haiku, 중단 후 이어가기 포함)
+node bin/harness.js run "요청" --project 이름
 ```
 
 | 문서 | 내용 |
