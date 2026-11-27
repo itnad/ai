@@ -9,14 +9,6 @@ create table if not exists employees (
   created_at  timestamptz not null default now()
 );
 
--- 회계연도(1월 1일 ~ 12월 31일)별 연차 부여 일수
-create table if not exists leave_grants (
-  employee_id int not null references employees(id) on delete cascade,
-  year        int not null,
-  days        numeric(4,1) not null check (days >= 0),
-  primary key (employee_id, year)
-);
-
 -- 휴가 기록. 한 기록은 항상 한 달 안에 들어가도록 서버에서 월 단위로 나눠 저장합니다.
 create table if not exists leave_records (
   id          serial primary key,

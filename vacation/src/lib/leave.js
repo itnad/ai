@@ -1,6 +1,6 @@
 import { addDays, dayOfWeek, diffDays, eachDate, isValidDate, lastDayOfMonth } from './dates.js';
 
-// deduct: 연차 잔여일수에서 차감하는지 여부
+// deduct: 연차 사용 일수로 집계하는지 여부. false 인 종류는 '기타 휴가'로 따로 집계합니다.
 export const LEAVE_TYPES = {
   annual:  { label: '연차',      deduct: true,  half: false },
   am_half: { label: '오전 반차', deduct: true,  half: true },

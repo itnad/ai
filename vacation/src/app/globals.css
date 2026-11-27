@@ -165,7 +165,7 @@ tr.inactive td { color: var(--muted); }
 
 .emp-row {
   display: grid;
-  grid-template-columns: 1.1fr 1.4fr 1fr .8fr 64px 64px;
+  grid-template-columns: 1.1fr 1.4fr 1fr 64px 64px;
   gap: 8px; align-items: center;
   padding: 8px 12px; border-top: 1px solid var(--border);
 }

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const ITEMS = [
   { href: '/admin', label: '월별 현황' },
   { href: '/admin/records', label: '휴가 기록' },
-  { href: '/admin/employees', label: '직원·연차' },
+  { href: '/admin/employees', label: '직원' },
   { href: '/admin/holidays', label: '공휴일' },
 ];
 

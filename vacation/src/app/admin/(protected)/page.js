@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { requireAdmin, formatPhone } from '@/lib/auth';
-import { getSummaries, remaining } from '@/lib/data';
-import { currentYm, isValidYm, formatYmKo, formatDateTimeKo } from '@/lib/dates';
+import { getSummaries, getRecords, describeByEmployee } from '@/lib/data';
+import { currentYm, isValidYm, monthRange, formatYmKo, formatDateTimeKo } from '@/lib/dates';
 import { fmtDays } from '@/lib/url';
 import Flash from '@/components/Flash';
 import MonthNav from '@/components/MonthNav';
@@ -26,9 +26,9 @@ export default async function AdminOverview({ searchParams }) {
   const pendingOnly = sp.f === 'pending';
 
   const all = await getSummaries({ year, ym });
+  const usage = describeByEmployee(await getRecords(monthRange(ym)));
   const confirmed = all.filter((s) => s.confirmed_at);
   const pending = all.filter((s) => !s.confirmed_at);
-  const noGrant = all.filter((s) => s.granted == null);
   const rows = pendingOnly ? pending : all;
   const totalUsed = all.reduce((sum, s) => sum + s.used_month, 0);
   const canConfirm = ym <= nowYm;
@@ -48,13 +48,6 @@ export default async function AdminOverview({ searchParams }) {
         <div className="stat accent"><div className="label">입력 완료</div><div className="value">{confirmed.length}<small>명</small></div></div>
         <div className="stat"><div className="label">이번 달 연차 사용</div><div className="value">{fmtDays(totalUsed)}<small>일</small></div></div>
       </div>
-
-      {noGrant.length > 0 && (
-        <div className="banner warn">
-          {year}년 연차 부여 일수가 없는 직원이 {noGrant.length}명 있어요. 잔여 일수를 계산하려면{' '}
-          <Link href={`/admin/employees?year=${year}`}>직원·연차</Link>에서 설정해 주세요.
-        </div>
-      )}
 
       {canConfirm && (
         <section className="card">
@@ -89,54 +82,52 @@ export default async function AdminOverview({ searchParams }) {
             <tr>
               <th>이름</th>
               <th className="hide-sm">부서</th>
+              <th>{Number(ym.slice(5))}월 사용 내역</th>
               <th className="num">{Number(ym.slice(5))}월 연차</th>
               <th className="num hide-sm">{Number(ym.slice(5))}월 기타</th>
-              <th className="num">올해 사용</th>
-              <th className="num">부여</th>
-              <th className="num">잔여</th>
+              <th className="num">{year}년 연차 누적</th>
+              <th className="num hide-sm">{year}년 기타 누적</th>
               <th>입력</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="empty">{all.length === 0 ? '등록된 직원이 없어요. 직원·연차 메뉴에서 등록해 주세요.' : '해당하는 직원이 없어요.'}</td></tr>
+              <tr><td colSpan={8} className="empty">{all.length === 0 ? '등록된 직원이 없어요. 직원 메뉴에서 등록해 주세요.' : '해당하는 직원이 없어요.'}</td></tr>
             )}
-            {rows.map((s) => {
-              const left = remaining(s);
-              return (
-                <tr key={s.id}>
-                  <td className="nowrap">
-                    <Link href={`/admin/records?ym=${ym}&emp=${s.id}`}>{s.name}</Link>
-                    <div className="small muted hide-sm">{formatPhone(s.phone)}</div>
-                  </td>
-                  <td className="hide-sm">{s.department}</td>
-                  <td className="num">{s.used_month ? fmtDays(s.used_month) : '-'}</td>
-                  <td className="num hide-sm">{s.other_month ? fmtDays(s.other_month) : '-'}</td>
-                  <td className="num">{fmtDays(s.used_year)}</td>
-                  <td className="num">{s.granted == null ? <span className="badge warn">미설정</span> : fmtDays(s.granted)}</td>
-                  <td className={`num ${left != null && left < 0 ? 'neg' : ''}`}>{left == null ? '-' : fmtDays(left)}</td>
-                  <td className="nowrap">
-                    {s.confirmed_at ? (
-                      <form action={unconfirmAction} className="row" style={{ gap: 4 }}>
-                        <span className="badge ok" title={formatDateTimeKo(s.confirmed_at)}>완료</span>
-                        <input type="hidden" name="employeeId" value={s.id} />
-                        <input type="hidden" name="name" value={s.name} />
-                        <input type="hidden" name="ym" value={ym} />
-                        <input type="hidden" name="back" value={back} />
-                        <ConfirmButton className="ghost small" message={`${s.name}님의 ${formatYmKo(ym)} 입력 완료를 취소할까요?\n직원이 다시 수정할 수 있게 됩니다.`}>취소</ConfirmButton>
-                      </form>
-                    ) : canConfirm ? (
-                      <span className="badge warn">미입력</span>
-                    ) : (
-                      <span className="badge">예정</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((s) => (
+              <tr key={s.id}>
+                <td className="nowrap">
+                  <Link href={`/admin/records?ym=${ym}&emp=${s.id}`}>{s.name}</Link>
+                  <div className="small muted hide-sm">{formatPhone(s.phone)}</div>
+                </td>
+                <td className="hide-sm nowrap">{s.department}</td>
+                <td className="small">{usage.get(s.id) ?? <span className="muted">-</span>}</td>
+                <td className="num">{s.used_month ? fmtDays(s.used_month) : '-'}</td>
+                <td className="num hide-sm">{s.other_month ? fmtDays(s.other_month) : '-'}</td>
+                <td className="num"><strong>{fmtDays(s.used_year)}</strong></td>
+                <td className="num hide-sm">{s.other_year ? fmtDays(s.other_year) : '-'}</td>
+                <td className="nowrap">
+                  {s.confirmed_at ? (
+                    <form action={unconfirmAction} className="row" style={{ gap: 4 }}>
+                      <span className="badge ok" title={formatDateTimeKo(s.confirmed_at)}>완료</span>
+                      <input type="hidden" name="employeeId" value={s.id} />
+                      <input type="hidden" name="name" value={s.name} />
+                      <input type="hidden" name="ym" value={ym} />
+                      <input type="hidden" name="back" value={back} />
+                      <ConfirmButton className="ghost small" message={`${s.name}님의 ${formatYmKo(ym)} 입력 완료를 취소할까요?\n직원이 다시 수정할 수 있게 됩니다.`}>취소</ConfirmButton>
+                    </form>
+                  ) : canConfirm ? (
+                    <span className="badge warn">미입력</span>
+                  ) : (
+                    <span className="badge">예정</span>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+      <p className="small muted" style={{ margin: 0 }}>연차는 반차를 포함하고, 오늘 이후로 등록된 예정 휴가도 누적에 들어갑니다. 병가·경조사·기타는 기타로 따로 셉니다.</p>
     </>
   );
 }

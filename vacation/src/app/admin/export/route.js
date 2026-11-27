@@ -1,5 +1,5 @@
 import { isAdmin, formatPhone } from '@/lib/auth';
-import { getSummaries, getRecords, getYearMatrix, remaining } from '@/lib/data';
+import { getSummaries, getRecords, getYearMatrix, describeByEmployee } from '@/lib/data';
 import { currentYm, isValidYm, monthRange, formatDateTimeKo } from '@/lib/dates';
 import { typeLabel } from '@/lib/leave';
 
@@ -38,16 +38,16 @@ export async function GET(request) {
     const y = Number(searchParams.get('year')) || Number(ym.slice(0, 4));
     const rows = await getYearMatrix(y);
     return csv(`연차현황_${y}.csv`,
-      ['이름', '부서', '부여', ...Array.from({ length: 12 }, (_, i) => `${i + 1}월`), '연차 합계', '잔여', '기타휴가 합계'],
-      rows.map((r) => [r.name, r.department, r.granted ?? '', ...r.months.map((m) => m || ''), r.used,
-        r.granted == null ? '' : r.granted - r.used, r.other || '']));
+      ['이름', '부서', ...Array.from({ length: 12 }, (_, i) => `${i + 1}월 연차`), '연차 합계', '기타휴가 합계'],
+      rows.map((r) => [r.name, r.department, ...r.months.map((m) => m || ''), r.used, r.other || '']));
   }
 
   const year = Number(ym.slice(0, 4));
   const rows = await getSummaries({ year, ym });
+  const usage = describeByEmployee(await getRecords(monthRange(ym)));
   const m = Number(ym.slice(5));
   return csv(`휴가현황_${ym}.csv`,
-    ['이름', '부서', '전화번호', `${m}월 연차`, `${m}월 기타휴가`, `${year}년 연차 사용`, '부여', '잔여', '입력 완료', '완료 일시'],
-    rows.map((s) => [s.name, s.department, formatPhone(s.phone), s.used_month, s.other_month, s.used_year,
-      s.granted ?? '', remaining(s) ?? '', s.confirmed_at ? 'O' : 'X', formatDateTimeKo(s.confirmed_at)]));
+    ['이름', '부서', '전화번호', `${m}월 사용 내역`, `${m}월 연차`, `${m}월 기타휴가`, `${year}년 연차 누적`, `${year}년 기타휴가 누적`, '입력 완료', '완료 일시'],
+    rows.map((s) => [s.name, s.department, formatPhone(s.phone), usage.get(s.id) ?? '', s.used_month, s.other_month,
+      s.used_year, s.other_year, s.confirmed_at ? 'O' : 'X', formatDateTimeKo(s.confirmed_at)]));
 }

@@ -1,6 +1,6 @@
 import { query, one, transaction } from './db.js';
 import { DEDUCT_TYPES, planLeave, findConflict, typeLabel } from './leave.js';
-import { formatRangeKo, monthRange, formatYmKo } from './dates.js';
+import { formatRangeKo, formatRangeShort, monthRange, formatYmKo, todayKST } from './dates.js';
 
 export async function getHolidaySet(start, end, q = query) {
   const rows = await q('select date from holidays where date between $1 and $2', [start, end]);
@@ -8,32 +8,42 @@ export async function getHolidaySet(start, end, q = query) {
 }
 
 /**
- * 직원별 요약. year 의 부여/사용 합계와 ym 의 월간 사용, 월말 확인 여부를 돌려줍니다.
+ * 직원별 사용 집계. year 의 누적 사용, ym 의 월간 사용, 월말 확인 여부를 돌려줍니다.
+ * planned_year 는 올해 누적 중 오늘 이후로 등록된(예정) 연차 일수입니다.
  * employeeId 를 주면 그 직원 한 명만, 아니면 재직 중인 전 직원.
  */
 export async function getSummaries({ year, ym, employeeId = null }) {
   return query(
     `select e.id, e.name, e.department, e.phone,
-            g.days as granted,
             coalesce(sum(r.days) filter (where r.type = any($3)), 0) as used_year,
+            coalesce(sum(r.days) filter (where r.type = any($3) and r.start_date > $5::date), 0) as planned_year,
             coalesce(sum(r.days) filter (where r.type <> all($3)), 0) as other_year,
             coalesce(sum(r.days) filter (where r.type = any($3) and to_char(r.start_date, 'YYYY-MM') = $2), 0) as used_month,
             coalesce(sum(r.days) filter (where r.type <> all($3) and to_char(r.start_date, 'YYYY-MM') = $2), 0) as other_month,
             c.confirmed_at
        from employees e
-       left join leave_grants g on g.employee_id = e.id and g.year = $1
        left join leave_records r on r.employee_id = e.id
              and r.start_date >= make_date($1, 1, 1) and r.start_date <= make_date($1, 12, 31)
        left join monthly_confirmations c on c.employee_id = e.id and c.ym = $2
       where e.active and ($4::int is null or e.id = $4)
-      group by e.id, g.days, c.confirmed_at
+      group by e.id, c.confirmed_at
       order by e.department, e.name`,
-    [year, ym, DEDUCT_TYPES, employeeId],
+    [year, ym, DEDUCT_TYPES, employeeId, todayKST()],
   );
 }
 
-export function remaining(summary) {
-  return summary.granted == null ? null : summary.granted - summary.used_year;
+// 기록 목록을 직원별 "11/23~24 연차, 11/27 오전 반차" 형태 문장으로 묶습니다.
+export function describeByEmployee(records) {
+  const map = new Map();
+  for (const r of records) {
+    if (!map.has(r.employee_id)) map.set(r.employee_id, []);
+    map.get(r.employee_id).push(`${formatRangeShort(r.start_date, r.end_date)} ${typeLabel(r.type)}${r.type === 'annual' && r.days !== 1 ? ` ${fmt(r.days)}일` : ''}`);
+  }
+  return new Map([...map].map(([k, v]) => [k, v.join(', ')]));
+}
+
+function fmt(n) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 export async function getRecords({ employeeId = null, start, end }) {
@@ -41,7 +51,7 @@ export async function getRecords({ employeeId = null, start, end }) {
     `select r.*, e.name, e.department
        from leave_records r join employees e on e.id = r.employee_id
       where r.start_date between $1 and $2 and ($3::int is null or r.employee_id = $3)
-      order by r.start_date, e.name`,
+      order by r.start_date, e.department, e.name, r.id`,
     [start, end, employeeId],
   );
 }
@@ -122,26 +132,25 @@ export async function unconfirmMonth(employeeId, ym) {
   await query('delete from monthly_confirmations where employee_id = $1 and ym = $2', [employeeId, ym]);
 }
 
-// 연간 표: 직원 × 1~12월 연차 차감 사용일수
+// 연간 표: 직원 × 1~12월 연차(반차 포함) 사용일수
 export async function getYearMatrix(year) {
   const rows = await query(
-    `select e.id, e.name, e.department, g.days as granted,
+    `select e.id, e.name, e.department,
             extract(month from r.start_date)::int as month,
             coalesce(sum(r.days) filter (where r.type = any($2)), 0) as used,
             coalesce(sum(r.days) filter (where r.type <> all($2)), 0) as other
        from employees e
-       left join leave_grants g on g.employee_id = e.id and g.year = $1
        left join leave_records r on r.employee_id = e.id
              and r.start_date >= make_date($1, 1, 1) and r.start_date <= make_date($1, 12, 31)
       where e.active
-      group by e.id, g.days, month
+      group by e.id, month
       order by e.department, e.name`,
     [year, DEDUCT_TYPES],
   );
   const byId = new Map();
   for (const r of rows) {
     if (!byId.has(r.id)) {
-      byId.set(r.id, { id: r.id, name: r.name, department: r.department, granted: r.granted, months: Array(12).fill(0), used: 0, other: 0 });
+      byId.set(r.id, { id: r.id, name: r.name, department: r.department, months: Array(12).fill(0), used: 0, other: 0 });
     }
     const row = byId.get(r.id);
     if (r.month) {

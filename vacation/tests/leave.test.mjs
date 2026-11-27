@@ -63,3 +63,10 @@ test('날짜 도우미', () => {
   assert.equal(todayKST(new Date('2026-11-30T15:30:00Z')), '2026-12-01');
   assert.equal(currentYm(new Date('2026-11-30T15:30:00Z')), '2026-12');
 });
+
+test('짧은 기간 표시', async () => {
+  const { formatRangeShort } = await import('../src/lib/dates.js');
+  assert.equal(formatRangeShort('2026-11-27', '2026-11-27'), '11/27');
+  assert.equal(formatRangeShort('2026-11-23', '2026-11-24'), '11/23~24');
+  assert.equal(formatRangeShort('2026-11-30', '2026-12-02'), '11/30~12/2');
+});

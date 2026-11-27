@@ -79,6 +79,14 @@ export function formatRangeKo(start, end) {
   return start === end ? formatDateKo(start) : `${formatDateKo(start)} ~ ${formatDateKo(end)}`;
 }
 
+// 11/23~24, 11/30~12/2, 11/27 처럼 짧게 표시
+export function formatRangeShort(start, end) {
+  const [, sm, sd] = start.split('-').map(Number);
+  if (start === end) return `${sm}/${sd}`;
+  const [, em, ed] = end.split('-').map(Number);
+  return sm === em ? `${sm}/${sd}~${ed}` : `${sm}/${sd}~${em}/${ed}`;
+}
+
 export function formatDateTimeKo(value) {
   if (!value) return '';
   return new Intl.DateTimeFormat('ko-KR', {

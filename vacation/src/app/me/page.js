@@ -1,5 +1,5 @@
 import { requireEmployee } from '@/lib/auth';
-import { getSummaries, getRecords, remaining } from '@/lib/data';
+import { getSummaries, getRecords } from '@/lib/data';
 import { currentYm, todayKST, isValidYm, monthRange, formatYmKo, formatRangeKo, formatDateTimeKo } from '@/lib/dates';
 import { typeLabel, LEAVE_TYPES } from '@/lib/leave';
 import { fmtDays } from '@/lib/url';
@@ -23,7 +23,6 @@ export default async function MyPage({ searchParams }) {
 
   const confirmed = Boolean(summary?.confirmed_at);
   const isFuture = ym > nowYm;
-  const left = summary ? remaining(summary) : null;
   const defaultDate = ym === nowYm ? todayKST() : `${ym}-01`;
 
   return (
@@ -42,14 +41,14 @@ export default async function MyPage({ searchParams }) {
         <Flash searchParams={sp} />
 
         <section>
-          <div className="small muted" style={{ marginBottom: 6 }}>{year}년 연차 (1월 1일 ~ 12월 31일)</div>
           <div className="stats">
-            <div className="stat"><div className="label">부여</div><div className="value">{summary?.granted == null ? '-' : fmtDays(summary.granted)}<small>일</small></div></div>
-            <div className="stat"><div className="label">사용·예정</div><div className="value">{fmtDays(summary?.used_year ?? 0)}<small>일</small></div></div>
-            <div className="stat accent"><div className="label">잔여</div><div className={`value ${left != null && left < 0 ? 'neg' : ''}`}>{left == null ? '-' : fmtDays(left)}<small>일</small></div></div>
+            <div className="stat accent"><div className="label">올해 연차</div><div className="value">{fmtDays(summary?.used_year ?? 0)}<small>일</small></div></div>
+            <div className="stat"><div className="label">{Number(ym.slice(5))}월 연차</div><div className="value">{fmtDays(summary?.used_month ?? 0)}<small>일</small></div></div>
+            <div className="stat"><div className="label">올해 기타 휴가</div><div className="value">{fmtDays(summary?.other_year ?? 0)}<small>일</small></div></div>
           </div>
-          {summary?.granted == null && <p className="small muted">올해 부여 일수가 아직 등록되지 않았어요. 관리자가 등록하면 잔여 일수가 표시됩니다.</p>}
-          {summary?.other_year > 0 && <p className="small muted">연차에서 차감되지 않는 휴가(병가·경조사·기타) {fmtDays(summary.other_year)}일은 따로 집계됩니다.</p>}
+          <p className="small muted" style={{ margin: '6px 0 0' }}>
+            {year}년 1월 1일부터의 합계이고, 연차는 반차(0.5일)를 포함합니다{summary?.planned_year ? `. 앞으로 쓸 예정인 ${fmtDays(summary.planned_year)}일도 포함돼 있어요` : ''}. 병가·경조사·기타는 기타 휴가로 따로 셉니다.
+          </p>
         </section>
 
         <MonthNav ym={ym} basePath="/me" />
