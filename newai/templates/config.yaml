@@ -1,0 +1,43 @@
+# newai 전역 설정. 값을 바꾸면 서버가 다시 읽는다.
+# 대기 시간은 /timeout 명령이나 대시보드로 바꿔도 이 파일에 저장된다.
+
+language: ko            # 기본 보고 언어. 사용자가 요청에 다른 언어를 명시하면 그것이 우선한다.
+
+server:
+  port: 47321           # 이 PC 안에서만 연다(127.0.0.1).
+  host: 127.0.0.1
+
+decision:
+  timeout: 1m           # 사람이 고르지 않을 때 기다리는 시간: 20s | 1m | 5m | 10m | 20m
+  deliver: hold         # hold: 답이 정해질 때까지 세션이 기다림 / resume: 멈췄다가 이어가기
+
+scoring:                # 추천안 점수화(판단 모델)
+  model: claude-haiku-5-5
+  weights: { goal: 30, reversible: 20, scope: 15, env: 15, rules: 10, cost: 10 }
+
+runner:
+  model: claude-opus-5-5
+  max_concurrent: 2
+  wall_clock_limit: 90m       # 작업 1회 실행 상한
+  budget_per_run_usd: 5
+  budget_per_day_usd: 50
+  completion_followups: 2     # 완료 검사 후 보완 지시 최대 횟수
+  tail_question_max: 3        # 보고 끝 질문을 결정 카드로 바꿔 이어가는 최대 횟수
+
+resume:                       # 중단된 작업 자동 이어가기
+  usage_limit: { max_per_day: 6, grace: 2m }
+  network: { base: 30s, max: 10m, max_attempts: 6, max_total: 2h }
+  restart: { delay: 30s, max_attempts: 3 }
+  wall_clock: { max_attempts: 3 }
+
+projects:
+  commit_default: false       # 새 프로젝트는 기본적으로 커밋하지 않는다(/commit on 으로 켬).
+  history_items: 5            # 새 대화에 넣는 이전 작업 기록 개수
+
+notify:
+  desktop: true
+  telegram: false             # 켜려면 secrets.yaml에 봇 토큰과 chat ID가 필요하다.
+  slack: false
+
+web_check:
+  allow_hosts: [localhost, 127.0.0.1, "::1"]

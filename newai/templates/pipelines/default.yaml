@@ -1,0 +1,13 @@
+# 기본 개발 파이프라인. 단계를 추가·삭제하거나 단계별 모델을 바꿀 수 있다.
+name: default
+stages:
+  - { id: requirements, output: docs/requirements.md }
+  - { id: design, input: [docs/requirements.md], output: docs/design.md }
+  - { id: spec, input: [docs/design.md], output: docs/spec.md }
+  - { id: implement, input: [docs/spec.md], output: docs/implementation.md }
+  - id: verify
+    model: claude-sonnet-5-5
+    input: [docs/spec.md, docs/implementation.md]
+    output: docs/verification.md
+    verdict: { pattern: '^판정:\s*(통과|실패)', fix_stage: implement, max_retries: 2 }
+  - { id: commit, when: commit_enabled, action: git-commit }

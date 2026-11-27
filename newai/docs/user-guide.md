@@ -1,17 +1,20 @@
 # newai 사용 설명서 (초안)
 
-> **상태: 구현 전 초안.** 아래 명령은 아직 동작하지 않는다. 각 구현 단계가 끝날 때마다 실제 동작에 맞춰 고친다.
+> **상태: 구현 중.** 지금 동작하는 것은 `harness doctor`, `harness init`, `harness policy check`, `harness config get/set`뿐이다. 나머지는 각 구현 단계가 끝날 때 실제 동작에 맞춰 고친다.
 
 ## 1. 설치
 
-필요한 것: Node.js 22 이상, Claude Code(로그인 완료), Git, (선택) GitHub CLI `gh`.
+필요한 것: Node.js 22.18 이상, Claude Code(로그인 완료), Git, (선택) GitHub CLI `gh`.
+빌드는 필요 없다. Node가 TypeScript 소스를 그대로 실행한다.
 
 ```bash
 cd newai
 npm install
-npm run build
 npm link
+harness doctor
 ```
+
+`npm install -g`로 설치하면 소스가 `node_modules` 안에 놓여 실행되지 않는다. 반드시 저장소 폴더에서 `npm link`를 쓴다.
 
 처음 실행하면 데이터 폴더(Windows `%APPDATA%\newai`, 그 외 `~/.newai`)에 기본 설정이 만들어진다.
 
@@ -64,7 +67,29 @@ harness autostart install   # Windows 로그인 시 자동 실행(등록 전 확
 
 Telegram 원격 답변은 `secrets.yaml`에 봇 토큰과 chat ID를 넣고 `config.yaml`의 `notify.telegram: true`로 켠다.
 
-## 7. 문제 해결
+## 7. 정책 확인
+
+어떤 명령이 막히는지 미리 볼 수 있다.
+
+```bash
+harness policy check "git push origin main"
+```
+
+```bash
+harness policy check --write ../other/file.txt --workdir .
+```
+
+결과는 즉시 허용, 대기 필수, 사람 승인, 거부 중 하나와 이유다. 정책은 데이터 폴더의 `policy.yaml`에서 고친다.
+
+## 8. 설정 바꾸기
+
+```bash
+harness config set decision.timeout 5m
+```
+
+잘못된 값이면 저장하지 않고 한국어로 이유를 알려 준다. 파일의 주석은 그대로 남는다.
+
+## 9. 문제 해결
 
 | 증상 | 확인 |
 |---|---|

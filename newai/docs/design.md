@@ -6,12 +6,12 @@
 
 | 항목 | 선택 | 이유 |
 |---|---|---|
-| 언어·런타임 | TypeScript, Node.js 22 LTS, ESM | Agent SDK의 1급 언어. Playwright·터미널·웹을 한 런타임으로. Windows 설치가 쉽다 |
+| 언어·런타임 | TypeScript, Node.js 22.18 이상, ESM, **빌드 없이 실행** | Agent SDK의 1급 언어. Node 22.18부터 TypeScript를 그대로 실행하므로 빌드 결과와 소스가 어긋날 일이 없다. 단, `node_modules` 안에서는 실행되지 않으므로 설치는 저장소에서 `npm link`로 한다 |
 | Claude 연결 | `@anthropic-ai/claude-agent-sdk`, 기본 인증은 로그인된 Claude Code(설정으로 API 키 전환) | `canUseTool`, 훅, `resume`, `maxBudgetUsd`, 사용량 조회를 모두 제공(실측 확인) |
-| 저장소 | SQLite (`node:sqlite`, 실패 시 `better-sqlite3`) | 파일 하나, 트랜잭션, 재시작 후 유지. WAL 모드 |
+| 저장소 | SQLite (`node:sqlite`) | 파일 하나, 트랜잭션, 재시작 후 유지. WAL 모드. 실험 기능 경고가 화면에 섞이지 않도록 처음 쓸 때 불러온다 |
 | 서버 | `node:http` + `ws`(WebSocket) | 의존성 최소. REST + 실시간 이벤트 |
 | 웹 화면 | Preact + Vite 빌드 결과를 서버가 정적 제공 | 가볍고 키보드 조작 구현이 쉽다. 외부 CDN 없이 동작 |
-| 설정 형식 | YAML (`yaml`), 검증은 `zod` | 사람이 고치기 쉽다. 잘못된 값은 시작 시 한국어 오류 |
+| 설정 형식 | YAML (`yaml`), 검증은 `zod` 4 | 사람이 고치기 쉽다. zod 4의 한국어 오류 문구로 잘못된 값과 오타 키를 바로 알린다. 고칠 때 주석을 지키는 문서 API를 쓴다 |
 | 스케줄 | `croner` | cron 식, 시간대 지원 |
 | 웹 확인 | Playwright (Chromium) | 가려진 요소 클릭 오류를 기본 제공(실측 확인) |
 | 알림 | Windows 토스트(PowerShell), macOS `osascript`, Linux `notify-send` | 추가 네이티브 모듈 없이 |

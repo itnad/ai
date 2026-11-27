@@ -39,6 +39,15 @@
 
 선택지 문구에 push·배포·공개가 들어 있으면 자동 선택에서 뺀다(`auto_select_exclude`).
 
+Bash 명령은 맞는 규칙을 모두 찾고 가장 엄격한 단계를 쓴다. 명령 안에 보호 경로나 비밀 파일 이름이 있으면 그것만으로도 사람 승인이다. `.env.example`, `*.pub`처럼 비밀이 아닌 파일은 `secret_files_exclude`로 뺀다.
+
+### 끌 수 없는 기본 규칙
+정책 파일과 무관하게 코드에서 항상 적용한다. 모두 사람 승인이다.
+- `GIT_CONFIG_COUNT`·`GIT_CONFIG_KEY_n` 같은 push 차단용 환경 변수를 건드림
+- `pushInsteadOf` 언급
+- `env -u`, `env -i`, `unset GIT_...`처럼 환경 변수를 지움
+- `git -c url....`, `git --config-env`로 설정을 명령에서 덮어씀
+
 ## 4. 겹별 구현
 
 | 겹 | 구현 | 막는 것 |

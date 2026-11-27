@@ -71,7 +71,7 @@ web_check: { allow_hosts: [localhost, 127.0.0.1, "::1"] }
 
 ### 3.2 `policy.yaml`
 판정 단계: `allow`(즉시 허용) · `wait`(대기 필수, 마감 시 점수 1순위가 자동 선택 가능하면 진행) · `human`(사람만) · `deny`(거부).
-위에서부터 처음 맞는 규칙을 쓴다. 자세한 근거는 `security-policy.md`.
+Bash 명령은 **맞는 규칙을 모두 찾고 가장 엄격한 단계**를 쓴다(규칙 순서를 바꿔도 안전). `except_local: true`인 규칙은 명령 안의 주소가 모두 이 PC 안이면 건너뛴다. 코드에 박힌 기본 규칙(push 차단 우회 감지)은 정책 파일로 끌 수 없다. 실제 내용은 `templates/policy.yaml`이 원본이고, 아래는 요약이다. 자세한 근거는 `security-policy.md`.
 ```yaml
 version: 1
 protected_paths:              # human
@@ -142,7 +142,7 @@ servers:
 | rules | id, scope(project/global), project_id, text, origin(auto/manual), status(active/proposed/disabled), created_at |
 | project_history | id, project_id, job_id, summary, pending_items, cancelled_unanswered |
 | schedules | id, cron, kind, payload, enabled, last_run_at |
-| settings | key, value (`decision.timeout` 등 즉시 반영 값) |
+| kv | key, value (서버 내부 상태). 대기 시간 같은 전역 설정은 DB가 아니라 `config.yaml` 하나에 저장한다 |
 
 ## 5. HTTP API (127.0.0.1)
 
@@ -212,13 +212,15 @@ servers:
 |---|---|---|
 | serve [--port --home] | 서버 실행(전경) | |
 | stop / status / doctor | 서버 중지 / 상태 / 환경 점검 | |
+| init | 데이터 폴더와 기본 설정 만들기(있는 파일은 그대로) | |
+| config get/set <키> [값] | 설정 조회·변경(검증 후 저장, 주석 유지) | 1 검증 실패 |
 | check-web URL [옵션] | 7.3 | 0 통과, 2 사용 오류, 3 기대 실패, 4 접속 실패 |
 | keytest | 키 입력 바이트 표시 | |
 | clean [--dry-run] | 정리 대상 목록 → 확인 후 삭제 | |
 | bridge install / uninstall | 확인 후 전역 Claude Code 설정 변경 | |
 | hook | 브리지 훅 실행(설정에서 호출) | |
 | autostart install / uninstall | 확인 후 작업 스케줄러 등록·해제 | |
-| policy check "명령" | 정책 판정 결과 출력 | |
+| policy check "명령" / --write / --read / --url / --option | 정책 판정 결과 출력 | 0 즉시 허용, 10 대기 필수, 11 사람 승인, 12 거부 |
 | report [작업ID] | 보고서 출력 | |
 
 ### 7.3 `harness check-web`

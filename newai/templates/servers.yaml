@@ -1,0 +1,8 @@
+# 서버 검토 대상. 예시는 주석으로 둔다.
+servers: []
+#  - name: api-prod
+#    url: https://api.example.com/health
+#    expect: { status: 200, contains: '"ok"', max_ms: 2000 }
+#    log_command: ssh deploy@api.example.com 'tail -n 200 /var/log/app.log'
+#    log_command_allowed: true
+#    schedule: "*/30 * * * *"
