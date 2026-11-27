@@ -1,0 +1,23 @@
+// Cloudflare Workers 배포 설정. 자세한 절차는 DEPLOY.md 를 보세요.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vacation",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Supabase 접속은 Hyperdrive 를 거칩니다.
+  // `npx wrangler hyperdrive create vacation-db --connection-string="..."` 로 만든 뒤 나온 id 로 바꾸세요.
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "REPLACE_WITH_HYPERDRIVE_ID"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

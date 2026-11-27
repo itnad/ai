@@ -7,11 +7,11 @@
     "backend": "nextjs-server-actions + postgres"
   },
   "deploy": {
-    "platform": "vercel",
-    "region": "icn1"
+    "platform": "cloudflare",
+    "worker": "vacation"
   },
   "build": {
-    "command": "npm run build",
-    "output_dir": ".next"
+    "command": "npm run cf:build",
+    "output_dir": ".open-next"
   }
 }

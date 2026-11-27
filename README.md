@@ -88,6 +88,7 @@ mkdir my-new-service
 |---|---|
 | `vercel` | Vercel 배포 |
 | `render` | Render.com 배포 (Deploy Hook 방식) |
+| `cloudflare` | Cloudflare Workers 배포 (Next.js 는 OpenNext 사용, 예: `vacation`) |
 | `github-pages` | GitHub Pages 배포 |
 | `none` | 배포 없음 (Claude 작업만) |
 
@@ -130,6 +131,8 @@ MY_NEW_SERVICE: ${{ secrets.RENDER_DEPLOY_HOOK_MY_NEW_SERVICE }}
 | Vercel | `VERCEL_ORG_ID` | Vercel Org ID |
 | Vercel | `VERCEL_PROJECT_ID_서비스명대문자` | 각 서비스별 프로젝트 ID |
 | Render | `RENDER_DEPLOY_HOOK_서비스명대문자` | Render Deploy Hook URL |
+| Cloudflare | `CLOUDFLARE_API_TOKEN` | Workers 편집 권한 API 토큰 |
+| Cloudflare | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 계정 ID |
 
 ### 5. 이슈 템플릿 업데이트
 

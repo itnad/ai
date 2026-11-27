@@ -21,24 +21,16 @@
 
 ## 처음 설정하기
 
-### 1. 데이터베이스 (Supabase 무료 요금제)
-1. https://supabase.com 에서 새 프로젝트를 만듭니다. 지역은 Seoul(ap-northeast-2)을 고릅니다.
-2. 왼쪽 **SQL Editor** 에서 `db/schema.sql` 내용을 붙여넣고 실행합니다.
-3. 이어서 `db/holidays.sql` 도 실행합니다.
-4. **Project Settings → Database → Connection string → Transaction pooler** 주소를 복사해 둡니다. `[YOUR-PASSWORD]` 부분은 프로젝트 비밀번호로 바꿉니다.
+배포는 **Cloudflare Workers + Supabase 무료 요금제** 조합으로 합니다. 결정 이유와 상세 절차는 [DEPLOY.md](DEPLOY.md) 에 있습니다.
 
-### 2. Vercel 배포
-1. Vercel 에서 **Add New Project → `itnad/ai` 저장소** 를 고르고 **Root Directory 를 `vacation`** 으로 지정합니다.
-2. Environment Variables 에 세 값을 넣습니다.
+### 1. 데이터베이스와 배포
+1. Supabase 프로젝트를 만들고 `db/schema.sql`, `db/holidays.sql` 을 실행합니다.
+2. Cloudflare Hyperdrive 를 만들고 `wrangler.jsonc` 에 id 를 넣은 뒤 `npm run deploy` 로 배포합니다.
+3. `SESSION_SECRET`, `ADMIN_PASSWORD` 비밀값을 넣습니다.
+4. GitHub 저장소에 Cloudflare 시크릿과 `VACATION_URL` 변수를 넣으면 자동 배포와 Supabase 정지 방지가 켜집니다.
 
-| 이름 | 값 |
-|---|---|
-| `DATABASE_URL` | 1번에서 복사한 접속 주소 |
-| `SESSION_SECRET` | 32자 이상 무작위 문자열 (예: `openssl rand -base64 32` 결과) |
-| `ADMIN_PASSWORD` | 관리자 비밀번호 |
-
-3. 배포 후 `https://배포주소/admin` 에서 관리자로 로그인합니다.
-4. AI 이슈 워크플로우로 자동 배포하려면 GitHub Secrets 에 `VERCEL_PROJECT_ID_VACATION` 을 추가합니다.
+### 2. 관리자 로그인
+`https://배포주소/admin` 에서 관리자 비밀번호로 로그인합니다.
 
 ### 3. 직원 등록과 안내
 1. **직원** 메뉴에서 엑셀의 이름, 전화번호, 부서 열을 복사해 붙여넣습니다.
@@ -56,8 +48,9 @@
 cp .env.example .env.local   # 값 채우기
 npm install
 npm run db:init              # DATABASE_URL 의 DB 에 스키마/공휴일 생성
-npm run dev
+npm run dev                  # Node 로 실행
 npm test                     # 휴가 일수 계산 단위 테스트
+npm run preview              # Cloudflare 와 같은 런타임으로 실행 (DEPLOY.md 참고)
 ```
 
 ## 알아둘 점

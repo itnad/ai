@@ -122,6 +122,23 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets[format('VERCEL_PROJECT_ID_{0}', env.SERVICE)] }}
 
+      # Cloudflare Workers 배포 (Next.js + OpenNext)
+      - name: Setup Node for Cloudflare
+        if: steps.config.outputs.platform == 'cloudflare'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy to Cloudflare
+        if: steps.config.outputs.platform == 'cloudflare'
+        run: |
+          cd $SERVICE
+          npm ci
+          npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       # Render 배포 (Deploy Hook URL 방식)
       - name: Deploy to Render
         if: steps.config.outputs.platform == 'render'
