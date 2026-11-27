@@ -24,7 +24,7 @@ export default function LeaveForm({ action, defaultDate, ym, employees = null, s
           </select>
         </div>
       )}
-      <div>
+      <div className="field-wide">
         <label htmlFor="type">종류</label>
         <select id="type" name="type" value={type} onChange={(e) => setType(e.target.value)}>
           {Object.entries(LEAVE_TYPES).map(([k, v]) => (

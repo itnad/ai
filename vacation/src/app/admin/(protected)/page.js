@@ -69,9 +69,9 @@ export default async function AdminOverview({ searchParams }) {
       <MonthNav ym={ym} basePath="/admin" extra={qs().replace(`/admin?ym=${ym}`, '')} />
 
       <div className="stats">
-        <div className="stat"><div className="label">재직 인원</div><div className="value">{all.length}<small>명</small></div></div>
+        <div className="stat"><div className="label">재직</div><div className="value">{all.length}<small>명</small></div></div>
         <div className="stat accent"><div className="label">입력 완료</div><div className="value">{confirmed.length}<small>명</small></div></div>
-        <div className="stat"><div className="label">{Number(ym.slice(5))}월 휴가 등록</div><div className="value">{monthCount}<small>건</small></div><div className="small muted">연차 {fmtDays(totalUsed)}일</div></div>
+        <div className="stat"><div className="label">{Number(ym.slice(5))}월 등록</div><div className="value">{monthCount}<small>건</small></div><div className="small muted">연차 {fmtDays(totalUsed)}일</div></div>
       </div>
 
       {canConfirm && (
@@ -89,27 +89,31 @@ export default async function AdminOverview({ searchParams }) {
         </section>
       )}
 
-      <div className="spread">
-        <div className="row">
-          <Link href={qs({ f: '' })} className={`btn small ${pendingOnly ? 'secondary' : ''}`}>전체</Link>
-          <Link href={qs({ f: 'pending' })} className={`btn small ${pendingOnly ? '' : 'secondary'}`}>미입력만</Link>
-          <span className="muted small" style={{ marginLeft: 8 }}>정렬</span>
-          <Link href={qs({ sort: '' })} className={`btn small ${byRecent ? 'secondary' : ''}`}>부서·이름</Link>
-          <Link href={qs({ sort: 'recent' })} className={`btn small ${byRecent ? '' : 'secondary'}`}>최근 입력순</Link>
+      <div className="toolbar">
+        <div className="toolbar-group">
+          <div className="seg" role="group" aria-label="보기">
+            <Link href={qs({ f: '' })} className={pendingOnly ? '' : 'on'}>전체</Link>
+            <Link href={qs({ f: 'pending' })} className={pendingOnly ? 'on' : ''}>미입력만</Link>
+          </div>
+          <div className="seg" role="group" aria-label="정렬">
+            <Link href={qs({ sort: '' })} className={byRecent ? '' : 'on'}>부서·이름순</Link>
+            <Link href={qs({ sort: 'recent' })} className={byRecent ? 'on' : ''}>최근 입력순</Link>
+          </div>
         </div>
-        <div className="row">
-          <a className="btn secondary small" href={`/admin/export?kind=summary&ym=${ym}`}>월 현황 엑셀</a>
-          <a className="btn secondary small" href={`/admin/export?kind=records&ym=${ym}`}>월 상세 엑셀</a>
-          <a className="btn secondary small" href={`/admin/export?kind=year&year=${year}`}>{year}년 연간 엑셀</a>
+        <div className="downloads">
+          <span className="small muted">엑셀</span>
+          <a className="btn secondary small" href={`/admin/export?kind=summary&ym=${ym}`}>월 현황</a>
+          <a className="btn secondary small" href={`/admin/export?kind=records&ym=${ym}`}>월 상세</a>
+          <a className="btn secondary small" href={`/admin/export?kind=year&year=${year}`}>{year}년</a>
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="table-wrap cards-sm">
         <table>
           <thead>
             <tr>
               <th>이름</th>
-              <th className="hide-sm">부서</th>
+              <th className="hide-md">부서</th>
               <th className="num">{Number(ym.slice(5))}월 등록</th>
               <th className="hide-sm">{Number(ym.slice(5))}월 사용 내역</th>
               <th className="num">{year}년 등록</th>
@@ -123,37 +127,38 @@ export default async function AdminOverview({ searchParams }) {
             )}
             {rows.map((s) => (
               <tr key={s.id}>
-                <td className="nowrap">
+                <td className="nowrap c-name">
                   <Link href={`/admin/records?ym=${ym}&emp=${s.id}`}>{s.name}</Link>
                   <div className="small muted hide-sm">{formatPhone(s.phone)}</div>
+                  {s.department && <div className="small muted show-md">{s.department}</div>}
                 </td>
-                <td className="hide-sm nowrap">{s.department}</td>
-                <td className="num nowrap">
-                  {s.month_count ? (
-                    <>
-                      <strong>{s.month_count}건</strong>
-                      <div className="small">{daysText(s.used_month, s.other_month)}</div>
-                    </>
-                  ) : <span className="muted">-</span>}
+                <td className="hide-md nowrap">{s.department}</td>
+                <td className="num nowrap c-line" data-label={`${Number(ym.slice(5))}월 등록`}>
+                  <span className="v">
+                    {s.month_count ? (
+                      <><strong>{s.month_count}건</strong><span className="sub">{daysText(s.used_month, s.other_month)}</span></>
+                    ) : <span className="muted">-</span>}
+                  </span>
                 </td>
-                <td className="small hide-sm">{usage.get(s.id) ?? <span className="muted">-</span>}</td>
-                <td className="num nowrap">
-                  {s.year_count ? (
-                    <>
-                      <strong>{s.year_count}건</strong>
-                      <div className="small">{daysText(s.used_year, s.other_year)}</div>
-                    </>
-                  ) : <span className="muted">-</span>}
+                <td className={`small c-block ${usage.get(s.id) ? '' : 'is-empty'}`} data-label="사용 내역">{usage.get(s.id) ?? <span className="muted">-</span>}</td>
+                <td className="num nowrap c-line" data-label={`${year}년 등록`}>
+                  <span className="v">
+                    {s.year_count ? (
+                      <><strong>{s.year_count}건</strong><span className="sub">{daysText(s.used_year, s.other_year)}</span></>
+                    ) : <span className="muted">-</span>}
+                  </span>
                 </td>
-                <td className="nowrap">
-                  {s.last_entry_at ? (
-                    <>
-                      <span className={isThisMonth(s.last_entry_at, nowYm) ? '' : 'muted'}>{formatDateTimeKo(s.last_entry_at)}</span>
-                      <div className="small muted">{s.last_entry_by === 'admin' ? '관리자 입력' : '본인 입력'}</div>
-                    </>
-                  ) : <span className="muted">입력 없음</span>}
+                <td className="nowrap c-line" data-label="최근 입력·수정">
+                  <span className="v">
+                    {s.last_entry_at ? (
+                      <>
+                        <span className={isThisMonth(s.last_entry_at, nowYm) ? '' : 'muted'}>{formatDateTimeKo(s.last_entry_at)}</span>
+                        <span className="sub muted">{s.last_entry_by === 'admin' ? '관리자 입력' : '본인 입력'}</span>
+                      </>
+                    ) : <span className="muted">입력 없음</span>}
+                  </span>
                 </td>
-                <td className="nowrap">
+                <td className="nowrap c-status">
                   {s.confirmed_at ? (
                     <form action={unconfirmAction}>
                       <span className="badge ok">완료</span>

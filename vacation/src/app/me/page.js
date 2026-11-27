@@ -44,7 +44,7 @@ export default async function MyPage({ searchParams }) {
           <div className="stats">
             <div className="stat accent"><div className="label">올해 연차</div><div className="value">{fmtDays(summary?.used_year ?? 0)}<small>일</small></div></div>
             <div className="stat"><div className="label">{Number(ym.slice(5))}월 연차</div><div className="value">{fmtDays(summary?.used_month ?? 0)}<small>일</small></div></div>
-            <div className="stat"><div className="label">올해 기타 휴가</div><div className="value">{fmtDays(summary?.other_year ?? 0)}<small>일</small></div></div>
+            <div className="stat"><div className="label">기타 휴가</div><div className="value">{fmtDays(summary?.other_year ?? 0)}<small>일</small></div></div>
           </div>
           <p className="small muted" style={{ margin: '6px 0 0' }}>
             {year}년 1월 1일부터의 합계이고, 연차는 반차(0.5일)를 포함합니다{summary?.planned_year ? `. 앞으로 쓸 예정인 ${fmtDays(summary.planned_year)}일도 포함돼 있어요` : ''}. 병가·경조사·기타는 기타 휴가로 따로 셉니다.

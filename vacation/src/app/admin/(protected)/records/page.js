@@ -35,7 +35,7 @@ export default async function AdminRecords({ searchParams }) {
         </div>
       )}
 
-      <div className="table-wrap">
+      <div className="table-wrap cards-sm">
         <table>
           <thead>
             <tr>
@@ -44,8 +44,8 @@ export default async function AdminRecords({ searchParams }) {
               <th>기간</th>
               <th>종류</th>
               <th className="num">일수</th>
-              <th className="hide-sm">메모</th>
-              <th className="hide-sm">등록</th>
+              <th>메모</th>
+              <th>등록</th>
               <th></th>
             </tr>
           </thead>
@@ -53,14 +53,17 @@ export default async function AdminRecords({ searchParams }) {
             {records.length === 0 && <tr><td colSpan={8} className="empty">{formatYmKo(ym)}에 등록된 휴가가 없어요.</td></tr>}
             {records.map((r) => (
               <tr key={r.id}>
-                <td className="nowrap"><Link href={`/admin/records?ym=${ym}&emp=${r.employee_id}`}>{r.name}</Link></td>
+                <td className="nowrap c-name">
+                  <Link href={`/admin/records?ym=${ym}&emp=${r.employee_id}`}>{r.name}</Link>
+                  {r.department && <div className="small muted show-sm">{r.department}</div>}
+                </td>
                 <td className="hide-sm">{r.department}</td>
-                <td className="nowrap">{formatRangeKo(r.start_date, r.end_date)}</td>
-                <td><span className={`badge ${LEAVE_TYPES[r.type]?.deduct ? 'primary' : ''}`}>{typeLabel(r.type)}</span></td>
-                <td className="num">{fmtDays(r.days)}</td>
-                <td className="hide-sm">{r.memo}</td>
-                <td className="hide-sm small muted nowrap">{r.created_by === 'admin' ? '관리자' : '본인'} · {formatDateTimeKo(r.created_at)}</td>
-                <td>
+                <td className="nowrap c-line" data-label="기간"><span className="v">{formatRangeKo(r.start_date, r.end_date)}</span></td>
+                <td className="c-line" data-label="종류"><span className="v"><span className={`badge ${LEAVE_TYPES[r.type]?.deduct ? 'primary' : ''}`}>{typeLabel(r.type)}</span><span className="show-sm-inline"> {fmtDays(r.days)}일</span></span></td>
+                <td className="num hide-sm">{fmtDays(r.days)}</td>
+                <td className={`c-block ${r.memo ? '' : 'is-empty'}`} data-label="메모">{r.memo}</td>
+                <td className="small muted nowrap c-line" data-label="등록"><span className="v">{r.created_by === 'admin' ? '관리자' : '본인'} · {formatDateTimeKo(r.created_at)}</span></td>
+                <td className="c-status">
                   <form action={adminDeleteLeaveAction}>
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="back" value={back} />

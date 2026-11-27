@@ -46,3 +46,9 @@
 - 스키마를 바꾸면 `db/schema.sql` 을 idempotent 하게 유지하고 README 에 이행 SQL 을 적는다.
 - `npm test` (휴가 계산 단위 테스트) 와 `npm run cf:build` 가 통과해야 한다.
 - 화면 문구는 한국어, 직원 화면은 모바일 우선.
+
+## 모바일 레이아웃 규칙
+- 폭 320, 360, 390, 430, 768, 1024, 1280px 에서 페이지 가로 넘침과 표 안 가로 스크롤이 모두 없어야 한다.
+- 관리자 표는 `table-wrap cards-sm` 로 감싸면 640px 이하에서 카드로 바뀐다. 셀 클래스: `c-name`(카드 제목), `c-status`(오른쪽 위), `c-line` + `data-label`(라벨·값 한 줄, 값은 `<span className="v">` 로 감쌈), `c-block` + `data-label`(긴 글), 빈 값은 `is-empty`.
+- 보조 표시 클래스: `hide-sm`/`show-sm`/`show-sm-inline`(640px 이하), `hide-md`/`show-md`(960px 이하).
+- 그리드 자식은 `min-width: 0`, 한글은 `word-break: keep-all` 이 기본이다. 새 표나 버튼 줄을 추가하면 같은 방식으로 맞춘다.

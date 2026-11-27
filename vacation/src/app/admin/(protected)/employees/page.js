@@ -22,11 +22,11 @@ export default async function AdminEmployees({ searchParams }) {
         {employees.map((e) => (
           <form key={e.id} action={updateEmployeeAction} className="emp-row">
             <input type="hidden" name="id" value={e.id} />
-            <input name="name" defaultValue={e.name} aria-label="이름" required />
-            <input name="phone" defaultValue={formatPhone(e.phone)} aria-label="전화번호" inputMode="tel" required />
-            <input name="department" defaultValue={e.department} aria-label="부서" placeholder="부서" />
+            <input className="e-name" name="name" defaultValue={e.name} aria-label="이름" required />
+            <input className="e-phone" name="phone" defaultValue={formatPhone(e.phone)} aria-label="전화번호" inputMode="tel" required />
+            <input className="e-dept" name="department" defaultValue={e.department} aria-label="부서" placeholder="부서" />
             <label className="chk"><input type="checkbox" name="active" defaultChecked={e.active} /> 재직</label>
-            <button className="secondary small">저장</button>
+            <button className="secondary small e-save">저장</button>
           </form>
         ))}
       </div>

@@ -7,11 +7,9 @@ export default async function AdminLayout({ children }) {
   return (
     <>
       <header className="topbar">
-        <div className="container wide spread">
-          <div className="row" style={{ gap: 16 }}>
-            <h1>휴가 관리</h1>
-            <AdminNav />
-          </div>
+        <div className="container wide admin-head">
+          <h1>휴가 관리</h1>
+          <AdminNav />
           <form action={adminLogoutAction}><button className="secondary small">로그아웃</button></form>
         </div>
       </header>
