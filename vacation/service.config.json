@@ -1,0 +1,17 @@
+{
+  "name": "vacation",
+  "type": "fullstack",
+  "description": "직원 휴가 사용 기록 및 월별 현황 취합",
+  "stack": {
+    "frontend": "nextjs",
+    "backend": "nextjs-server-actions + postgres"
+  },
+  "deploy": {
+    "platform": "vercel",
+    "region": "icn1"
+  },
+  "build": {
+    "command": "npm run build",
+    "output_dir": ".next"
+  }
+}

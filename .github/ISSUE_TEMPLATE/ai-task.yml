@@ -17,6 +17,7 @@ body:
         - socceroid
         - wordchain
         - haruil
+        - vacation
         # 서비스 추가 시 여기에 추가
     validations:
       required: true
